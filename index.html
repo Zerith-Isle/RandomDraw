@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RandomDraw - 随机抽号系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#FF7D00',
+                        neutral: '#F5F7FA',
+                        dark: '#1D2129',
+                        roster: '#8B5CF6',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .number-transition {
+                transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+            .bg-gradient-primary {
+                background: linear-gradient(135deg, #165DFF 0%, #0040C9 100%);
+            }
+            .bg-gradient-roster {
+                background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+            }
+            .btn-hover-effect {
+                @apply transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95;
+            }
+            .tab-active {
+                @apply border-b-2 border-white text-white;
+            }
+            .tab-inactive {
+                @apply border-b-2 border-transparent text-gray-200 hover:text-white transition-colors duration-200;
+            }
+            .pulse {
+                animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+            .roster-table {
+                max-height: 300px;
+                overflow-y: auto;
+                display: block;
+            }
+            
+            /* 暗色模式样式覆盖 */
+            .dark body {
+                background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+                color: #e2e8f0;
+            }
+            
+            .dark .bg-white {
+                background-color: #2d3748;
+                border-color: #4a5568;
+            }
+            
+            .dark .text-dark {
+                color: #e2e8f0;
+            }
+            
+            .dark .text-gray-500 {
+                color: #a0aec0;
+            }
+            
+            .dark .border-blue-100 {
+                border-color: #4a5568;
+            }
+            
+            .dark .bg-blue-50 {
+                background-color: #2d3748;
+                border-color: #4a5568;
+            }
+            
+            .dark .bg-purple-50 {
+                background-color: #2d3748;
+                border-color: #4a5568;
+            }
+            
+            .dark .bg-green-50 {
+                background-color: #2d3748;
+                border-color: #4a5568;
+            }
+            
+            .dark .bg-neutral {
+                background-color: #2d3748;
+            }
+            
+            .dark .bg-gray-50 {
+                background-color: #2d3748;
+            }
+            
+            .dark .divide-gray-200 {
+                border-color: #4a5568;
+            }
+            
+            .dark .bg-gray-50 {
+                background-color: #2d3748;
+            }
+            
+            .dark .border-gray-200 {
+                border-color: #4a5568;
+            }
+            
+            .dark input, .dark select {
+                background-color: #2d3748;
+                color: #e2e8f0;
+                border-color: #4a5568;
+            }
+            
+            .dark input::placeholder, .dark select::placeholder {
+                color: #a0aec0;
+            }
+            
+            /* 修复深色模式文字颜色 */
+            .dark .text-gray-700 {
+                color: #cbd5e0;
+            }
+            
+            .dark .text-gray-900 {
+                color: #e2e8f0;
+            }
+            
+            .dark .text-blue-600 {
+                color: #63b3ed;
+            }
+            
+            .dark .text-purple-600 {
+                color: #b794f4;
+            }
+            
+            .dark .text-green-600 {
+                color: #68d391;
+            }
+            
+            .dark .text-red-500 {
+                color: #fc8181;
+            }
+            
+            /* 文件格式说明样式 */
+            .file-format-card {
+                transition: all 0.3s ease;
+            }
+            .file-format-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            }
+            
+            /* 动画效果 */
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .fade-in {
+                animation: fadeIn 0.5s ease-out forwards;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen flex flex-col dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-900">
+    <!-- 顶部导航 -->
+    <header class="bg-gradient-primary text-white shadow-xl">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-random text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold">随机抽号系统</h1>
+            </div>
+            <nav>
+                <ul class="flex space-x-6">
+                    <li><a href="#home" class="tab-active flex items-center py-1" id="nav-home">
+                        <i class="fa fa-home mr-1"></i>首页</a></li>
+                    <li><a href="#guide" class="tab-inactive flex items-center py-1" id="nav-guide">
+                        <i class="fa fa-book mr-1"></i>使用说明</a></li>
+                    <li><a href="#history" class="tab-inactive flex items-center py-1" id="nav-history">
+                        <i class="fa fa-history mr-1"></i>历史记录</a></li>
+                    <li><a href="#settings" class="tab-inactive flex items-center py-1" id="nav-settings">
+                        <i class="fa fa-cog mr-1"></i>设置</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- 首页内容 -->
+            <section id="home-section" class="transition-all duration-500">
+                <!-- 模式切换 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6 dark:bg-gray-800">
+                    <div class="flex flex-col">
+                        <span class="text-lg font-medium mb-3 dark:text-gray-200">抽号模式:</span>
+                        <div class="flex space-x-4">
+                            <label class="flex items-center">
+                                <input type="radio" name="mode" value="number" class="h-4 w-4 text-primary focus:ring-primary" checked>
+                                <span class="ml-2 text-gray-700 dark:text-gray-300">数字模式</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="mode" value="roster" class="h-4 w-4 text-roster focus:ring-roster">
+                                <span class="ml-2 text-gray-700 dark:text-gray-300">花名册模式</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 抽号区域 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8 transform transition-all duration-500 hover:shadow-xl dark:bg-gray-800">
+                    <h2 class="text-2xl font-bold text-dark mb-6 flex items-center dark:text-white" id="mode-title">
+                        <i class="fa fa-ticket text-primary mr-2"></i>当前抽号
+                    </h2>
+                    
+                    <div class="flex flex-col md:flex-row gap-8 items-center">
+                        <!-- 左侧：显示区域 -->
+                        <div class="w-full md:w-2/3 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-8 flex flex-col items-center justify-center border-2 border-blue-100 dark:from-gray-700 dark:to-gray-800 dark:border-gray-600">
+                            <div class="text-sm text-gray-500 mb-2 dark:text-gray-400" id="display-label">当前抽取的号码</div>
+                            <div id="number-display" class="text-[clamp(3rem,15vw,8rem)] font-bold text-primary number-transition dark:text-blue-300">
+                                0
+                            </div>
+                            <div id="result-text" class="text-lg mt-4 text-gray-600 dark:text-gray-300">准备开始抽号</div>
+                        </div>
+                        
+                        <!-- 右侧：控制区 -->
+                        <div class="w-full md:w-1/3 flex flex-col gap-4">
+                            <!-- 数字模式控制区 -->
+                            <div id="number-control">
+                                <div class="bg-neutral rounded-lg p-4 dark:bg-gray-700">
+                                    <h3 class="text-sm font-medium text-gray-700 mb-3 dark:text-gray-300">设置范围</h3>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label for="min-number" class="block text-xs text-gray-500 mb-1 dark:text-gray-400">最小值</label>
+                                            <input type="number" id="min-number" value="1" min="1" max="10000" 
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                        </div>
+                                        <div>
+                                            <label for="max-number" class="block text-xs text-gray-500 mb-1 dark:text-gray-400">最大值</label>
+                                            <input type="number" id="max-number" value="100" min="1" max="10000" 
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                        </div>
+                                        <div>
+                                            <label for="exclude-numbers" class="block text-xs text-gray-500 mb-1 dark:text-gray-400">排除号码（用逗号分隔）</label>
+                                            <input type="text" id="exclude-numbers" placeholder="例如: 5,10,15" 
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 花名册模式控制区 -->
+                            <div id="roster-control" class="hidden">
+                                <div class="bg-neutral rounded-lg p-4 dark:bg-gray-700">
+                                    <h3 class="text-sm font-medium text-gray-700 mb-3 dark:text-gray-300">花名册设置</h3>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label for="current-roster" class="block text-xs text-gray-500 mb-1 dark:text-gray-400">当前使用的花名册</label>
+                                            <select id="current-roster" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-roster/50 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                                <option value="">请选择花名册</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="exclude-names" class="block text-xs text-gray-500 mb-1 dark:text-gray-400">排除名字（用逗号分隔）</label>
+                                            <input type="text" id="exclude-names" placeholder="例如: 张三,李四" 
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-roster/50 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-neutral rounded-lg p-4 dark:bg-gray-700">
+                                    <h3 class="text-sm font-medium text-gray-700 mb-3 dark:text-gray-300">当前花名册
+                                        <span class="text-xs font-normal text-gray-500 dark:text-gray-400" id="roster-count">(0个名字)</span>
+                                    </h3>
+                                    <div class="roster-table border border-gray-200 rounded-md overflow-hidden dark:border-gray-600">
+                                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                                            <thead class="bg-gray-50 dark:bg-gray-600">
+                                                <tr>
+                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">序号</th>
+                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">名字</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="roster-list" class="bg-white divide-y divide-gray-200 dark:bg-gray-700 dark:divide-gray-600">
+                                                <tr class="text-center">
+                                                    <td colspan="2" class="px-3 py-4 text-gray-500 text-sm dark:text-gray-400">请选择花名册</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button id="draw-button" class="bg-gradient-to-r from-primary to-blue-600 hover:from-blue-600 hover:to-primary text-white py-3 px-6 rounded-lg font-medium 
+                                btn-hover-effect flex items-center justify-center gap-2 shadow-md">
+                                <i class="fa fa-play"></i>
+                                <span>开始抽号</span>
+                            </button>
+                            
+                            <button id="reset-button" class="bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700 py-3 px-6 rounded-lg font-medium 
+                                btn-hover-effect flex items-center justify-center gap-2 dark:from-gray-600 dark:to-gray-700 dark:text-gray-200">
+                                <i class="fa fa-refresh"></i>
+                                <span>重置</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 新增：使用说明内容 -->
+            <section id="guide-section" class="hidden transition-all duration-500">
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8 dark:bg-gray-800">
+                    <h2 class="text-2xl font-bold text-dark mb-4 flex items-center dark:text-white">
+                        <i class="fa fa-book text-roster mr-2"></i>系统使用说明
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 dark:bg-gray-700 dark:border-gray-600">
+                            <div class="text-blue-600 text-lg font-semibold mb-2 flex items-center dark:text-blue-400">
+                                <i class="fa fa-sliders mr-2"></i>模式切换
+                            </div>
+                            <p class="text-gray-700 text-sm dark:text-gray-300">可在数字抽号和花名册抽名模式之间切换。花名册模式支持上传CSV/TXT文件。</p>
+                        </div>
+                        <div class="bg-purple-50 p-4 rounded-lg border border-purple-100 dark:bg-gray-700 dark:border-gray-600">
+                            <div class="text-purple-600 text-lg font-semibold mb-2 flex items-center dark:text-purple-400">
+                                <i class="fa fa-file-text-o mr-2"></i>花名册格式
+                            </div>
+                            <p class="text-gray-700 text-sm dark:text-gray-300">每行一个名字，或用逗号分隔的名字列表。支持排除特定名字。</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg border border-green-100 dark:bg-gray-700 dark:border-gray-600">
+                            <div class="text-green-600 text-lg font-semibold mb-2 flex items-center dark:text-green-400">
+                                <i class="fa fa-keyboard-o mr-2"></i>快捷键
+                            </div>
+                            <p class="text-gray-700 text-sm dark:text-gray-300">按空格键可快速开始抽号。抽名模式下，名字会以动画效果显示。</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-8">
+                        <h3 class="text-xl font-bold text-dark mb-4 flex items-center dark:text-white">
+                            <i class="fa fa-random text-primary mr-2"></i>基本操作指南
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 bg-primary/10 text-primary rounded-full w-8 h-8 flex items-center justify-center mt-1">
+                                    1
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="text-lg font-medium text-gray-900 dark:text-gray-200">数字模式</h4>
+                                    <p class="text-gray-600 dark:text-gray-300 mt-1">
+                                        在数字模式下，设置最小值和最大值以确定抽号范围。可以输入需要排除的号码（用逗号分隔）。
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 bg-roster/10 text-roster rounded-full w-8 h-8 flex items-center justify-center mt-1">
+                                    2
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="text-lg font-medium text-gray-900 dark:text-gray-200">花名册模式</h4>
+                                    <p class="text-gray-600 dark:text-gray-300 mt-1">
+                                        在花名册模式下，上传包含名字列表的CSV或TXT文件。系统支持多种编码格式，可解决中文乱码问题。
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 bg-secondary/10 text-secondary rounded-full w-8 h-8 flex items-center justify-center mt-1">
+                                    3
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="text-lg font-medium text-gray-900 dark:text-gray-200">历史记录</h4>
+                                    <p class="text-gray-600 dark:text-gray-300 mt-1">
+                                        所有抽号结果都会自动保存到历史记录中。您可以搜索、导出或清除历史记录。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-8">
+                        <h3 class="text-xl font-bold text-dark mb-4 flex items-center dark:text-white">
+                            <i class="fa fa-file-text text-roster mr-2"></i>花名册文件格式说明
+                        </h3>
+                        <!-- 新增：跳转链接 -->
+                        <div class="mt-4 text-center">
+                             <a href="0.html" class="text-primary hover:text-blue-700 underline dark:text-blue-300 dark:hover:text-blue-100 transition-colors duration-200">
+                            "没有txt/csv文件，点击制作
+                             </a>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- TXT格式 -->
+                            <div class="file-format-card bg-white border border-gray-200 rounded-lg p-5 shadow-sm dark:bg-gray-700 dark:border-gray-600">
+                                <div class="flex items-center mb-3">
+                                    <div class="bg-roster/10 p-2 rounded-full mr-3">
+                                        <i class="fa fa-file-text-o text-roster text-xl"></i>
+                                    </div>
+                                    <h4 class="text-lg font-bold text-gray-800 dark:text-gray-200">TXT格式</h4>
+                                </div>
+                                <p class="text-gray-600 dark:text-gray-300 mb-4">纯文本格式，每行一个名字：</p>
+                                <div class="bg-gray-100 p-4 rounded-md font-mono text-sm dark:bg-gray-800 dark:text-gray-300">
+                                    张三<br>
+                                    李四<br>
+                                    王五<br>
+                                    赵六
+                                </div>
+                                <p class="text-sm text-gray-500 mt-2 dark:text-gray-400">支持UTF-8编码，确保中文不会乱码</p>
+                            </div>
+                            
+                            <!-- CSV格式 -->
+                            <div class="file-format-card bg-white border border-gray-200 rounded-lg p-5 shadow-sm dark:bg-gray-700 dark:border-gray-600">
+                                <div class="flex items-center mb-3">
+                                    <div class="bg-roster/10 p-2 rounded-full mr-3">
+                                        <i class="fa fa-file-excel-o text-roster text-xl"></i>
+                                    </div>
+                                    <h4 class="text-lg font-bold text-gray-800 dark:text-gray-200">CSV格式</h4>
+                                </div>
+                                <p class="text-gray-600 dark:text-gray-300 mb-4">逗号分隔格式，每行多个名字：</p>
+                                <div class="bg-gray-100 p-4 rounded-md font-mono text-sm dark:bg-gray-800 dark:text-gray-300">
+                                    张三,李四<br>
+                                    王五,赵六,钱七<br>
+                                    孙八
+                                </div>
+                                <p class="text-sm text-gray-500 mt-2 dark:text-gray-400">每行用逗号分隔多个名字，无需引号</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 新增：更新日志 -->
+<div class="mt-8">
+    <h3 class="text-xl font-bold text-dark mb-4 flex items-center dark:text-white">
+        <i class="fa fa-history text-primary mr-2"></i>更新日志
+    </h3>
+    
+    <div class="space-y-6">
+        <!-- v2.2.0 -->
+        <div class="border-l-4 border-roster pl-4 py-2">
+            <h4 class="text-lg font-semibold text-roster dark:text-purple-300">v2.2.0 - 梦幻联动</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年6月2日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>实现与"零屿文件格式转换工具"无缝集成</li>
+                <li>增强中文编码识别能力，支持GBK/GB2312等多种编码</li>
+                <li>改进花名册文件处理机制，减少乱码问题</li>
+                <li>优化文件上传体验，增加文件编码选择器</li>
+            </ul>
+        </div>
+        
+        <!-- v2.1.1 -->
+        <div class="border-l-4 border-gray-300 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-gray-600 dark:text-gray-300">v2.1.1 - 性能优化</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年6月2日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>优化大花名册加载速度，提升性能30%</li>
+                <li>修复历史记录分页显示问题</li>
+                <li>改进移动端响应式布局</li>
+            </ul>
+        </div>
+        
+        <!-- v2.1.0 -->
+        <div class="border-l-4 border-blue-400 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-blue-500 dark:text-blue-300">v2.1.0 - 界面增强</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年6月2日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>新增卡片悬停动画效果</li>
+                <li>优化深色模式配色方案</li>
+                <li>添加花名册预览功能</li>
+                <li>改进设置页面布局</li>
+            </ul>
+        </div>
+        
+        <!-- v2.0.0 -->
+        <div class="border-l-4 border-secondary pl-4 py-2">
+            <h4 class="text-lg font-semibold text-secondary dark:text-orange-300">v2.0.0 - 使用说明</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年6月2日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>新增详细的使用说明文档</li>
+                <li>添加常见问题解答(FAQ)部分</li>
+                <li>增加文件格式说明卡片</li>
+                <li>优化移动端显示效果</li>
+            </ul>
+        </div>
+        
+        <!-- v1.6.0 -->
+        <div class="border-l-4 border-purple-400 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-purple-600 dark:text-purple-300">v1.6.0 - 历史增强</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年6月2日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>增加历史记录搜索功能</li>
+                <li>实现历史记录分页展示</li>
+                <li>添加历史记录导出为CSV功能</li>
+                <li>优化历史记录表格显示</li>
+            </ul>
+        </div>
+        
+        <!-- v1.5.2 -->
+        <div class="border-l-4 border-gray-300 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-gray-600 dark:text-gray-300">v1.5.2 - 问题修复</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年6月2日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>修复花名册排除功能错误</li>
+                <li>解决特定编码文件导入问题</li>
+                <li>优化花名册表格滚动条</li>
+            </ul>
+        </div>
+        
+        <!-- v1.5.1 -->
+        <div class="border-l-4 border-green-400 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-green-500 dark:text-green-300">v1.5.1 - 编码优化</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年6月1日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>增强中文编码支持，解决乱码问题</li>
+                <li>改进花名册文件解析逻辑</li>
+                <li>添加文件编码自动检测功能</li>
+            </ul>
+        </div>
+        
+        <!-- v1.5.0 -->
+        <div class="border-l-4 border-green-500 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-green-600 dark:text-green-300">v1.5.0 - 花名册点名</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年6月1日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>实现花名册点名功能</li>
+                <li>支持上传CSV/TXT格式的花名册文件</li>
+                <li>添加花名册管理界面</li>
+                <li>支持名字排除功能</li>
+            </ul>
+        </div>
+        
+        <!-- v1.4.0 -->
+        <div class="border-l-4 border-yellow-500 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-yellow-600 dark:text-yellow-300">v1.4.0 - 数据管理</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年6月1日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>添加数据备份功能</li>
+                <li>实现数据恢复功能</li>
+                <li>增加重置所有设置选项</li>
+                <li>优化本地存储机制</li>
+            </ul>
+        </div>
+        
+        <!-- v1.3.0 -->
+        <div class="border-l-4 border-blue-400 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-blue-500 dark:text-blue-300">v1.3.0 - 动画优化</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年6月1日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>添加三种动画速度选项（慢速、正常、快速）</li>
+                <li>改进数字滚动动画效果</li>
+                <li>添加抽取完成后的缩放动画</li>
+            </ul>
+        </div>
+        
+        <!-- v1.2.0 -->
+        <div class="border-l-4 border-purple-400 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-purple-600 dark:text-purple-300">v1.2.0 - 快捷操作</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年6月1日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>添加空格键快速抽号功能</li>
+                <li>实现Tab键在输入框间切换</li>
+                <li>增加按钮悬停动画效果</li>
+            </ul>
+        </div>
+        
+        <!-- v1.1.0 -->
+        <div class="border-l-4 border-indigo-500 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-indigo-600 dark:text-indigo-300">v1.1.0 - 深色模式</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年6月1日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>实现深色/浅色主题切换</li>
+                <li>添加自动跟随系统主题选项</li>
+                <li>优化深色模式下的界面显示</li>
+            </ul>
+        </div>
+        
+        <!-- v1.0.1 -->
+        <div class="border-l-4 border-gray-300 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-gray-600 dark:text-gray-300">v1.0.1 - 错误修复</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年5月31日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>修复历史记录保存错误</li>
+                <li>解决设置选项初始化问题</li>
+                <li>优化数字范围验证逻辑</li>
+            </ul>
+        </div>
+        
+        <!-- v1.0.0 -->
+        <div class="border-l-4 border-blue-500 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-blue-600 dark:text-blue-300">v1.0.0 - 历史与设置</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年5月31日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>实现历史记录功能</li>
+                <li>添加设置页面，支持主题切换</li>
+                <li>增加最大历史记录数限制</li>
+                <li>添加默认抽号范围设置</li>
+            </ul>
+        </div>
+        
+        <!-- v0.9.2 -->
+        <div class="border-l-4 border-gray-300 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-gray-600 dark:text-gray-300">v0.9.2 - 界面优化</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年5月31日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>改进响应式布局，适配移动设备</li>
+                <li>优化数字显示区域的视觉效果</li>
+                <li>添加按钮悬停效果</li>
+            </ul>
+        </div>
+        
+        <!-- v0.9.1 -->
+        <div class="border-l-4 border-gray-300 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-gray-600 dark:text-gray-300">v0.9.1 - 错误修复</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年5月31日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>修复排除号码功能错误</li>
+                <li>解决数字范围验证问题</li>
+                <li>优化动画流畅度</li>
+            </ul>
+        </div>
+        
+        <!-- v0.9.0 -->
+        <div class="border-l-4 border-gray-400 pl-4 py-2">
+            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-300">v0.9.0 - 初版发布</h4>
+            <p class="text-gray-700 dark:text-gray-300 mt-1">发布日期: 2025年5月31日</p>
+            <ul class="list-disc pl-5 mt-2 text-gray-700 dark:text-gray-300">
+                <li>实现基础数字抽号功能</li>
+                <li>支持自定义数字范围</li>
+                <li>添加排除号码功能</li>
+                <li>实现简单的抽号动画效果</li>
+            </ul>
+        </div>
+    </div>
+</div>
+                    <div class="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded dark:bg-yellow-900/30 dark:border-yellow-600">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fa fa-exclamation-circle text-yellow-500 dark:text-yellow-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-400">重要提示</h3>
+                                <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                                    <p>• 请确保使用UTF-8编码保存文件以避免中文乱码</p>
+                                    <p>• 系统支持混合格式（每行一个或多个名字）</p>
+                                    <p>• 空行和空白名字会被自动忽略</p>
+                                    <p>• 增强版支持多种编码方式，可解决乱码问题</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 dark:bg-gray-800">
+                    <h2 class="text-2xl font-bold text-dark mb-4 flex items-center dark:text-white">
+                        <i class="fa fa-question-circle text-primary mr-2"></i>常见问题解答
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div class="border-b border-gray-200 pb-4 last:border-0 dark:border-gray-700">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">为什么我的中文名字显示为乱码？</h3>
+                            <p class="text-gray-600 dark:text-gray-300 mt-1">
+                                请确保在保存文件时使用UTF-8编码。在系统设置中，您可以选择正确的文件编码格式（如GBK或GB2312）来解决中文乱码问题。
+                            </p>
+                        </div>
+                        
+                        <div class="border-b border-gray-200 pb-4 last:border-0 dark:border-gray-700">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">如何排除特定的名字或数字？</h3>
+                            <p class="text-gray-600 dark:text-gray-300 mt-1">
+                                在相应的控制区域中，输入需要排除的名字或数字，用逗号分隔。例如："张三,李四" 或 "5,10,15"。
+                            </p>
+                        </div>
+                        
+                        <div class="border-b border-gray-200 pb-4 last:border-0 dark:border-gray-700">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">历史记录可以保存多久？</h3>
+                            <p class="text-gray-600 dark:text-gray-300 mt-1">
+                                历史记录默认保存在您的浏览器本地存储中，最多可保存50条记录（可在设置中调整）。您也可以导出为CSV文件进行长期保存。
+                            </p>
+                        </div>
+                        
+                        <div class="pb-4">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">如何切换浅色/深色模式？</h3>
+                            <p class="text-gray-600 dark:text-gray-300 mt-1">
+                                在系统设置中，您可以选择浅色主题、深色主题或自动模式（根据系统设置自动切换）。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 历史记录内容 -->
+            <section id="history-section" class="hidden transition-all duration-500">
+                <!-- 历史记录 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8 dark:bg-gray-800">
+                    <h2 class="text-2xl font-bold text-dark mb-6 flex items-center dark:text-white">
+                        <i class="fa fa-history text-primary mr-2"></i>抽号历史
+                    </h2>
+                    
+                    <div class="mb-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="relative w-full md:w-auto">
+                            <input type="text" id="history-search" placeholder="搜索历史记录..." 
+                                class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                        <div class="flex space-x-2 w-full md:w-auto">
+                            <button id="export-history" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center btn-hover-effect flex-1 justify-center">
+                                <i class="fa fa-download mr-1"></i>导出
+                            </button>
+                            <button id="clear-history" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center btn-hover-effect flex-1 justify-center">
+                                <i class="fa fa-trash-o mr-1"></i>清空
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-600">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">序号</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">抽取号码/名字</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">抽取时间</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">模式</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-list" class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                                <tr class="text-center">
+                                    <td colspan="5" class="px-6 py-4 text-gray-500 dark:text-gray-400">暂无历史记录</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                            总共 <span id="history-count">0</span> 条记录
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-sm text-gray-500 mr-2 dark:text-gray-400">每页显示：</span>
+                            <select id="page-size" class="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="10">10条</option>
+                                <option value="20">20条</option>
+                                <option value="50">50条</option>
+                                <option value="100">100条</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="pagination" class="mt-6 flex justify-center space-x-1 hidden">
+                        <button class="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700" id="prev-page" disabled>
+                            <i class="fa fa-chevron-left"></i>
+                        </button>
+                        <div id="page-numbers" class="flex space-x-1"></div>
+                        <button class="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700" id="next-page" disabled>
+                            <i class="fa fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 设置内容 -->
+            <section id="settings-section" class="hidden transition-all duration-500">
+                <!-- 设置 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8 dark:bg-gray-800">
+                    <h2 class="text-2xl font-bold text-dark mb-6 flex items-center dark:text-white">
+                        <i class="fa fa-cog text-primary mr-2"></i>系统设置
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        <!-- 常规设置 -->
+                        <div class="border-b border-gray-200 pb-6 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold mb-4 dark:text-gray-200">常规设置</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="theme" class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">主题</label>
+                                    <select id="theme" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                        <option value="light">浅色主题</option>
+                                        <option value="dark">深色主题</option>
+                                        <option value="auto">自动（根据系统设置）</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="animation-speed" class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">动画速度</label>
+                                    <select id="animation-speed" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                        <option value="slow">慢速</option>
+                                        <option value="normal">正常</option>
+                                        <option value="fast">快速</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="auto-save-history" class="rounded text-primary focus:ring-primary h-4 w-4" checked>
+                                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">自动保存历史记录</span>
+                                    </label>
+                                </div>
+                                
+                                <div>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="sound-effect" class="rounded text-primary focus:ring-primary h-4 w-4">
+                                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">启用音效</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 高级设置 -->
+                        <div class="border-b border-gray-200 pb-6 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold mb-4 dark:text-gray-200">高级设置</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="max-history" class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">最大历史记录数</label>
+                                    <input type="number" id="max-history" value="50" min="10" max="1000" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">设置保存的最大历史记录数量，超出部分将自动删除</p>
+                                </div>
+                                
+                                <div>
+                                    <label for="default-range" class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">默认抽号范围</label>
+                                    <div class="flex space-x-2">
+                                        <input type="number" id="default-min" value="1" min="1" max="10000" placeholder="最小值" 
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                        <span class="flex items-center text-gray-500 dark:text-gray-400">-</span>
+                                        <input type="number" id="default-max" value="100" min="1" max="10000" placeholder="最大值" 
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 花名册管理 -->
+                        <div class="border-b border-gray-200 pb-6 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold mb-4 dark:text-gray-200">花名册管理</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">上传花名册 (CSV/TXT)</label>
+                                    <input type="file" id="roster-file" accept=".csv,.txt" class="w-full text-sm text-gray-500
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-lg file:border-0
+                                        file:text-sm file:font-semibold
+                                        file:bg-roster/90 file:text-white
+                                        hover:file:bg-roster dark:file:bg-roster/80">
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="roster-encoding" class="block text-xs text-gray-500 mb-1 dark:text-gray-400">文件编码</label>
+                                        <select id="roster-encoding" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-roster/50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                            <option value="utf-8">UTF-8</option>
+                                            <option value="gbk">GBK</option>
+                                            <option value="gb2312">GB2312</option>
+                                            <option value="iso-8859-1">ISO-8859-1</option>
+                                            <option value="windows-1252">Windows-1252</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="roster-name" class="block text-xs text-gray-500 mb-1 dark:text-gray-400">花名册名称</label>
+                                        <input type="text" id="roster-name" placeholder="为花名册命名" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-roster/50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <button id="save-roster" class="bg-roster hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center btn-hover-effect">
+                                        <i class="fa fa-save mr-1"></i>保存花名册
+                                    </button>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h4 class="text-md font-medium mb-3 dark:text-gray-300">已保存的花名册</h4>
+                                    <div class="border border-gray-200 rounded-md overflow-hidden dark:border-gray-600">
+                                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                                <tr>
+                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">名称</th>
+                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">数量</th>
+                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">操作</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="saved-rosters" class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                                                <tr class="text-center">
+                                                    <td colspan="3" class="px-4 py-4 text-gray-500 text-sm dark:text-gray-400">暂无花名册</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 数据管理 -->
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4 dark:text-gray-200">数据管理</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <button id="backup-data" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center btn-hover-effect">
+                                    <i class="fa fa-download mr-1"></i>备份数据
+                                </button>
+                                
+                                <button id="restore-data" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg flex items-center justify-center btn-hover-effect">
+                                    <i class="fa fa-upload mr-1"></i>恢复数据
+                                </button>
+                                
+                                <button id="reset-all" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center justify-center btn-hover-effect">
+                                    <i class="fa fa-refresh mr-1"></i>重置所有设置
+                                </button>
+                                
+                                <div></div> <!-- 占位，使按钮对齐 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 关于 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 dark:bg-gray-800">
+                    <h2 class="text-2xl font-bold text-dark mb-4 flex items-center dark:text-white">
+                        <i class="fa fa-info-circle text-primary mr-2"></i>关于
+                    </h2>
+                    
+                    <div class="space-y-3">
+                        <p class="text-gray-700 dark:text-gray-300">随机抽号系统 v2.2.0</p>
+                        <p class="text-gray-700 dark:text-gray-300">这是一个简单易用的随机抽号工具，支持数字抽号和花名册抽名两种模式。</p>
+                        <p class="text-gray-700 dark:text-gray-300">特性：</p>
+                        <ul class="list-disc pl-5 text-gray-700 dark:text-gray-300">
+                            <li>支持多种文件编码格式（UTF-8, GBK, GB2312等）</li>
+                            <li>改进的花名册管理界面</li>
+                            <li>更直观的动画效果</li>
+                            <li>增强的错误处理机制</li>
+                        </ul>
+                        
+                        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold mb-2 dark:text-gray-200">开发者信息</h3>
+                            <p class="text-gray-700 dark:text-gray-300">由"零屿工作室"成员'漫步'组织开发</p>
+                            <p class="text-gray-700 dark:text-gray-300">如需帮助或反馈问题，请联系：3480782991@qq.com</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-6">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p class="text-sm">© 2025 零屿随机抽号系统 - 所有权利保留</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="https://github.com/Zerith-Isle" class="text-gray-300 hover:text-white transition-colors duration-200">
+                        <i class="fa fa-github text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200">
+                        <i class="fa fa-twitter text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200">
+                        <i class="fa fa-linkedin text-xl"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const numberDisplay = document.getElementById('number-display');
+            const resultText = document.getElementById('result-text');
+            const drawButton = document.getElementById('draw-button');
+            const resetButton = document.getElementById('reset-button');
+            const minNumberInput = document.getElementById('min-number');
+            const maxNumberInput = document.getElementById('max-number');
+            const excludeNumbersInput = document.getElementById('exclude-numbers');
+            const historyList = document.getElementById('history-list');
+            const historyCount = document.getElementById('history-count');
+            const clearHistoryButton = document.getElementById('clear-history');
+            const exportHistoryButton = document.getElementById('export-history');
+            const historySearchInput = document.getElementById('history-search');
+            const pageSizeSelect = document.getElementById('page-size');
+            const prevPageButton = document.getElementById('prev-page');
+            const nextPageButton = document.getElementById('next-page');
+            const pageNumbersContainer = document.getElementById('page-numbers');
+            const paginationContainer = document.getElementById('pagination');
+            const navHome = document.getElementById('nav-home');
+            const navGuide = document.getElementById('nav-guide');
+            const navHistory = document.getElementById('nav-history');
+            const navSettings = document.getElementById('nav-settings');
+            const homeSection = document.getElementById('home-section');
+            const guideSection = document.getElementById('guide-section');
+            const historySection = document.getElementById('history-section');
+            const settingsSection = document.getElementById('settings-section');
+            const themeSelect = document.getElementById('theme');
+            const animationSpeedSelect = document.getElementById('animation-speed');
+            const autoSaveHistoryCheckbox = document.getElementById('auto-save-history');
+            const soundEffectCheckbox = document.getElementById('sound-effect');
+            const maxHistoryInput = document.getElementById('max-history');
+            const defaultMinInput = document.getElementById('default-min');
+            const defaultMaxInput = document.getElementById('default-max');
+            const backupDataButton = document.getElementById('backup-data');
+            const restoreDataButton = document.getElementById('restore-data');
+            const resetAllButton = document.getElementById('reset-all');
+            const modeRadios = document.querySelectorAll('input[name="mode"]');
+            const modeTitle = document.getElementById('mode-title');
+            const displayLabel = document.getElementById('display-label');
+            const numberControl = document.getElementById('number-control');
+            const rosterControl = document.getElementById('roster-control');
+            const rosterFileInput = document.getElementById('roster-file');
+            const excludeNamesInput = document.getElementById('exclude-names');
+            const rosterList = document.getElementById('roster-list');
+            const rosterCount = document.getElementById('roster-count');
+            const saveRosterButton = document.getElementById('save-roster');
+            const rosterNameInput = document.getElementById('roster-name');
+            const currentRosterSelect = document.getElementById('current-roster');
+            const savedRostersList = document.getElementById('saved-rosters');
+            const encodingSelect = document.getElementById('roster-encoding');
+            
+            // 历史记录数组
+            let drawHistory = JSON.parse(localStorage.getItem('drawHistory')) || [];
+            
+            // 花名册数组
+            let nameRoster = [];
+            let savedRosters = JSON.parse(localStorage.getItem('savedRosters')) || [];
+            
+            // 当前页码和每页显示数量
+            let currentPage = 1;
+            let pageSize = parseInt(pageSizeSelect.value);
+            let filteredHistory = [...drawHistory];
+            
+            // 当前模式 (true: 数字模式, false: 花名册模式)
+            let isNumberMode = true;
+            
+            // 初始化设置
+            function initSettings() {
+                const savedSettings = JSON.parse(localStorage.getItem('appSettings')) || {};
+                
+                themeSelect.value = savedSettings.theme || 'light';
+                animationSpeedSelect.value = savedSettings.animationSpeed || 'normal';
+                autoSaveHistoryCheckbox.checked = savedSettings.autoSaveHistory !== undefined ? savedSettings.autoSaveHistory : true;
+                soundEffectCheckbox.checked = savedSettings.soundEffect !== undefined ? savedSettings.soundEffect : false;
+                maxHistoryInput.value = savedSettings.maxHistory || 50;
+                defaultMinInput.value = savedSettings.defaultMin || 1;
+                defaultMaxInput.value = savedSettings.defaultMax || 100;
+                
+                renderSavedRosters();
+                applyTheme();
+                saveSettings();
+            }
+            
+            function saveSettings() {
+                const settings = {
+                    theme: themeSelect.value,
+                    animationSpeed: animationSpeedSelect.value,
+                    autoSaveHistory: autoSaveHistoryCheckbox.checked,
+                    soundEffect: soundEffectCheckbox.checked,
+                    maxHistory: parseInt(maxHistoryInput.value),
+                    defaultMin: parseInt(defaultMinInput.value),
+                    defaultMax: parseInt(defaultMaxInput.value)
+                };
+                
+                localStorage.setItem('appSettings', JSON.stringify(settings));
+                localStorage.setItem('savedRosters', JSON.stringify(savedRosters));
+            }
+            
+            function applyTheme() {
+                const theme = themeSelect.value;
+                const html = document.documentElement;
+                
+                html.classList.remove('dark');
+                html.classList.remove('light');
+                
+                if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    html.classList.add('dark');
+                } else {
+                    html.classList.add('light');
+                }
+            }
+            
+            function initNavigation() {
+                showSection('home');
+                
+                navHome.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showSection('home');
+                });
+                
+                navGuide.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showSection('guide');
+                });
+                
+                navHistory.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showSection('history');
+                    renderHistory();
+                });
+                
+                navSettings.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showSection('settings');
+                });
+            }
+            
+            function showSection(section) {
+                navHome.className = section === 'home' ? 'tab-active flex items-center py-1' : 'tab-inactive flex items-center py-1';
+                navGuide.className = section === 'guide' ? 'tab-active flex items-center py-1' : 'tab-inactive flex items-center py-1';
+                navHistory.className = section === 'history' ? 'tab-active flex items-center py-1' : 'tab-inactive flex items-center py-1';
+                navSettings.className = section === 'settings' ? 'tab-active flex items-center py-1' : 'tab-inactive flex items-center py-1';
+                
+                homeSection.classList.add('hidden');
+                guideSection.classList.add('hidden');
+                historySection.classList.add('hidden');
+                settingsSection.classList.add('hidden');
+                
+                if (section === 'home') {
+                    homeSection.classList.remove('hidden');
+                } else if (section === 'guide') {
+                    guideSection.classList.remove('hidden');
+                } else if (section === 'history') {
+                    historySection.classList.remove('hidden');
+                } else if (section === 'settings') {
+                    settingsSection.classList.remove('hidden');
+                }
+                
+                const activeSection = document.querySelector(`#${section}-section`);
+                activeSection.classList.add('opacity-0');
+                setTimeout(() => {
+                    activeSection.classList.remove('opacity-0');
+                }, 10);
+            }
+            
+            function renderRosterList() {
+                rosterList.innerHTML = '';
+                
+                if (nameRoster.length === 0) {
+                    rosterList.innerHTML = `
+                        <tr class="text-center">
+                            <td colspan="2" class="px-3 py-4 text-gray-500 text-sm dark:text-gray-400">请选择花名册</td>
+                        </tr>
+                    `;
+                    rosterCount.textContent = '(0个名字)';
+                    return;
+                }
+                
+                nameRoster.forEach((name, index) => {
+                    const row = document.createElement('tr');
+                    row.className = index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700';
+                    row.innerHTML = `
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${index + 1}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-300">${name}</td>
+                    `;
+                    rosterList.appendChild(row);
+                });
+                
+                rosterCount.textContent = `(${nameRoster.length}个名字)`;
+            }
+            
+            function renderSavedRosters() {
+                savedRostersList.innerHTML = '';
+                
+                if (savedRosters.length === 0) {
+                    savedRostersList.innerHTML = `
+                        <tr class="text-center">
+                            <td colspan="3" class="px-4 py-4 text-gray-500 text-sm dark:text-gray-400">暂无花名册</td>
+                        </tr>
+                    `;
+                    currentRosterSelect.innerHTML = '<option value="">请选择花名册</option>';
+                    return;
+                }
+                
+                currentRosterSelect.innerHTML = '<option value="">请选择花名册</option>';
+                
+                savedRosters.forEach((roster, index) => {
+                    const row = document.createElement('tr');
+                    row.className = index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700';
+                    
+                    row.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-300">${roster.name}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${roster.items.length}个名字</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                            <button class="text-blue-500 hover:text-blue-700 use-roster mr-2" data-index="${index}">
+                                <i class="fa fa-check"></i> 使用
+                            </button>
+                            <button class="text-red-500 hover:text-red-700 delete-roster" data-index="${index}">
+                                <i class="fa fa-trash"></i> 删除
+                            </button>
+                        </td>
+                    `;
+                    savedRostersList.appendChild(row);
+                    
+                    const option = document.createElement('option');
+                    option.value = roster.name;
+                    option.textContent = roster.name;
+                    currentRosterSelect.appendChild(option);
+                });
+                
+                document.querySelectorAll('.use-roster').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        nameRoster = [...savedRosters[index].items];
+                        renderRosterList();
+                        currentRosterSelect.value = savedRosters[index].name;
+                        
+                        if (!isNumberMode) {
+                            resultText.textContent = `已加载 ${nameRoster.length} 个名字`;
+                            resultText.className = 'text-lg mt-4 text-green-600 font-medium';
+                        }
+                    });
+                });
+                
+                document.querySelectorAll('.delete-roster').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        if (confirm(`确定要删除花名册 "${savedRosters[index].name}" 吗？`)) {
+                            savedRosters.splice(index, 1);
+                            localStorage.setItem('savedRosters', JSON.stringify(savedRosters));
+                            renderSavedRosters();
+                            
+                            if (currentRosterSelect.value === savedRosters[index].name) {
+                                nameRoster = [];
+                                renderRosterList();
+                                currentRosterSelect.value = "";
+                            }
+                        }
+                    });
+                });
+            }
+            
+            function saveRoster() {
+                if (nameRoster.length === 0) {
+                    alert('当前花名册为空，无法保存');
+                    return;
+                }
+                
+                const rosterName = rosterNameInput.value.trim();
+                if (!rosterName) {
+                    alert('请输入花名册名称');
+                    return;
+                }
+                
+                const existingIndex = savedRosters.findIndex(r => r.name === rosterName);
+                
+                if (existingIndex !== -1) {
+                    savedRosters[existingIndex].items = [...nameRoster];
+                } else {
+                    savedRosters.push({
+                        name: rosterName,
+                        items: [...nameRoster]
+                    });
+                }
+                
+                localStorage.setItem('savedRosters', JSON.stringify(savedRosters));
+                renderSavedRosters();
+                rosterNameInput.value = '';
+                alert(`花名册 "${rosterName}" 已保存！`);
+            }
+            
+            // 修复文件上传问题 - 支持多种编码
+            function handleRosterUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                const encoding = encodingSelect.value;
+                
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    let names = [];
+                    
+                    // 尝试不同的解码方式
+                    let decodedContent = content;
+                    
+                    // 如果用户选择的不是UTF-8，尝试转换
+                    if (encoding !== 'utf-8') {
+                        try {
+                            // 使用TextDecoder API尝试解码
+                            const decoder = new TextDecoder(encoding);
+                            const buffer = new Uint8Array(content.split('').map(c => c.charCodeAt(0)));
+                            decodedContent = decoder.decode(buffer);
+                        } catch (error) {
+                            console.error(`使用${encoding}解码失败:`, error);
+                            alert(`使用${encoding}解码失败，尝试使用UTF-8解码`);
+                            // 回退到UTF-8解码
+                            decodedContent = content;
+                        }
+                    }
+                    
+                    // 统一处理文件内容：按行分割
+                    const lines = decodedContent.split(/\r?\n/);
+                    
+                    lines.forEach(line => {
+                        // 移除行首尾空格
+                        line = line.trim();
+                        if (!line) return; // 跳过空行
+                        
+                        // 检查是否包含逗号分隔的名字
+                        if (line.includes(',')) {
+                            const lineNames = line.split(',').map(name => name.trim()).filter(name => name);
+                            names = [...names, ...lineNames];
+                        } else {
+                            // 单行单个名字
+                            names.push(line);
+                        }
+                    });
+                    
+                    // 过滤空名字
+                    nameRoster = names.filter(name => name.length > 0);
+                    
+                    // 更新UI
+                    renderRosterList();
+                    
+                    // 显示成功消息
+                    resultText.textContent = `已加载 ${nameRoster.length} 个名字`;
+                    resultText.className = 'text-lg mt-4 text-green-600 font-medium';
+                    
+                    // 自动切换到花名册模式
+                    document.querySelector('input[name="mode"][value="roster"]').checked = true;
+                    toggleMode();
+                };
+                
+                // 使用选择的编码读取文件
+                reader.readAsText(file, encoding);
+            }
+            
+            function toggleMode() {
+                const selectedMode = document.querySelector('input[name="mode"]:checked').value;
+                isNumberMode = selectedMode === 'number';
+                
+                if (isNumberMode) {
+                    modeTitle.innerHTML = '<i class="fa fa-ticket text-primary mr-2"></i>当前抽号';
+                    displayLabel.textContent = '当前抽取的号码';
+                    numberControl.classList.remove('hidden');
+                    rosterControl.classList.add('hidden');
+                    numberDisplay.textContent = '0';
+                    numberDisplay.className = 'text-[clamp(3rem,15vw,8rem)] font-bold text-primary number-transition dark:text-blue-300';
+                    resultText.textContent = '准备开始抽号';
+                    resultText.className = 'text-lg mt-4 text-gray-600 dark:text-gray-300';
+                } else {
+                    modeTitle.innerHTML = '<i class="fa fa-users text-roster mr-2"></i>花名册抽名';
+                    displayLabel.textContent = '当前抽取的名字';
+                    numberControl.classList.add('hidden');
+                    rosterControl.classList.remove('hidden');
+                    numberDisplay.textContent = nameRoster.length > 0 ? '准备就绪' : '请选择花名册';
+                    numberDisplay.className = 'text-[clamp(2rem,12vw,6rem)] font-bold text-roster number-transition dark:text-purple-300';
+                    resultText.textContent = nameRoster.length > 0 ? '已加载花名册' : '请选择或上传花名册';
+                    resultText.className = 'text-lg mt-4 text-gray-600 dark:text-gray-300';
+                    
+                    if (nameRoster.length > 0) {
+                        renderRosterList();
+                    }
+                }
+            }
+            
+            function renderHistory() {
+                const searchTerm = historySearchInput.value.toLowerCase();
+                filteredHistory = drawHistory.filter(item => 
+                    item.value.toString().toLowerCase().includes(searchTerm) || 
+                    item.time.toLowerCase().includes(searchTerm)
+                );
+                
+                const totalPages = Math.ceil(filteredHistory.length / pageSize);
+                
+                if (currentPage > totalPages) {
+                    currentPage = Math.max(1, totalPages);
+                }
+                
+                const startIndex = (currentPage - 1) * pageSize;
+                const endIndex = Math.min(startIndex + pageSize, filteredHistory.length);
+                const currentItems = filteredHistory.slice(startIndex, endIndex);
+                
+                if (currentItems.length === 0) {
+                    historyList.innerHTML = `
+                        <tr class="text-center">
+                            <td colspan="5" class="px-6 py-4 text-gray-500 dark:text-gray-400">暂无历史记录</td>
+                        </tr>
+                    `;
+                } else {
+                    historyList.innerHTML = '';
+                    currentItems.forEach((item, index) => {
+                        const row = document.createElement('tr');
+                        row.className = index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700';
+                        
+                        let valueDisplay;
+                        if (item.mode === 'number') {
+                            valueDisplay = `
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary dark:bg-blue-900/30 dark:text-blue-300">
+                                    ${item.value}
+                                </span>
+                            `;
+                        } else {
+                            valueDisplay = `
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-roster/10 text-roster dark:bg-purple-900/30 dark:text-purple-300">
+                                    ${item.value}
+                                </span>
+                            `;
+                        }
+                        
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${startIndex + index + 1}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                ${valueDisplay}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${item.time}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${item.mode === 'number' ? '数字' : '花名册'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <button class="text-red-500 hover:text-red-700 delete-history-item" data-index="${drawHistory.indexOf(item)}">
+                                    <i class="fa fa-trash-o"></i> 删除
+                                </button>
+                            </td>
+                        `;
+                        historyList.appendChild(row);
+                    });
+                    
+                    document.querySelectorAll('.delete-history-item').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const index = parseInt(this.getAttribute('data-index'));
+                            if (confirm('确定要删除这条历史记录吗？')) {
+                                drawHistory.splice(index, 1);
+                                localStorage.setItem('drawHistory', JSON.stringify(drawHistory));
+                                renderHistory();
+                            }
+                        });
+                    });
+                }
+                
+                historyCount.textContent = filteredHistory.length;
+                renderPagination(totalPages);
+            }
+            
+            function renderPagination(totalPages) {
+                pageNumbersContainer.innerHTML = '';
+                
+                if (filteredHistory.length <= pageSize) {
+                    paginationContainer.classList.add('hidden');
+                    return;
+                } else {
+                    paginationContainer.classList.remove('hidden');
+                }
+                
+                const maxVisiblePages = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = startPage + maxVisiblePages - 1;
+                
+                if (endPage > totalPages) {
+                    endPage = totalPages;
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+                
+                if (startPage > 1) {
+                    addPageButton(1);
+                    if (startPage > 2) {
+                        addEllipsis();
+                    }
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    addPageButton(i);
+                }
+                
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        addEllipsis();
+                    }
+                    addPageButton(totalPages);
+                }
+                
+                prevPageButton.disabled = currentPage === 1;
+                nextPageButton.disabled = currentPage === totalPages;
+            }
+            
+            function addPageButton(pageNum) {
+                const button = document.createElement('button');
+                button.className = `px-3 py-1 rounded border ${pageNum === currentPage ? 'bg-primary text-white border-primary' : 'border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'}`;
+                button.textContent = pageNum;
+                
+                button.addEventListener('click', function() {
+                    currentPage = pageNum;
+                    renderHistory();
+                });
+                
+                pageNumbersContainer.appendChild(button);
+            }
+            
+            function addEllipsis() {
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'px-2 py-1 text-gray-500 dark:text-gray-400';
+                ellipsis.textContent = '...';
+                pageNumbersContainer.appendChild(ellipsis);
+            }
+            
+            function generateRandomNumber(min, max, excludeNumbers) {
+                const availableNumbers = [];
+                for (let i = min; i <= max; i++) {
+                    if (!excludeNumbers.includes(i)) {
+                        availableNumbers.push(i);
+                    }
+                }
+                
+                if (availableNumbers.length === 0) {
+                    return null;
+                }
+                
+                const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                return availableNumbers[randomIndex];
+            }
+            
+            function parseExcludeNumbers(input) {
+                if (!input.trim()) {
+                    return [];
+                }
+                
+                const numbers = input.split(',')
+                    .map(num => parseInt(num.trim()))
+                    .filter(num => !isNaN(num));
+                
+                return [...new Set(numbers)];
+            }
+            
+            function parseExcludeNames(input) {
+                if (!input.trim()) {
+                    return [];
+                }
+                
+                const names = input.split(',')
+                    .map(name => name.trim())
+                    .filter(name => name.length > 0);
+                
+                return [...new Set(names)];
+            }
+            
+            function drawRandomName() {
+                if (nameRoster.length === 0) {
+                    resultText.textContent = '错误：花名册为空，请先选择花名册';
+                    resultText.className = 'text-lg mt-4 text-red-500 font-medium';
+                    return null;
+                }
+                
+                const excludeNames = parseExcludeNames(excludeNamesInput.value);
+                const availableNames = nameRoster.filter(name => !excludeNames.includes(name));
+                
+                if (availableNames.length === 0) {
+                    resultText.textContent = '错误：没有可用的名字，请减少排除的名字';
+                    resultText.className = 'text-lg mt-4 text-red-500 font-medium';
+                    return null;
+                }
+                
+                const randomIndex = Math.floor(Math.random() * availableNames.length);
+                return availableNames[randomIndex];
+            }
+            
+            function animateDraw(targetValue) {
+                let currentValue = numberDisplay.textContent;
+                const settings = JSON.parse(localStorage.getItem('appSettings')) || {};
+                const animationSpeed = settings.animationSpeed || 'normal';
+                
+                let animationDuration;
+                switch (animationSpeed) {
+                    case 'slow': animationDuration = 3000; break;
+                    case 'fast': animationDuration = 1000; break;
+                    default: animationDuration = 2000; break;
+                }
+                
+                const frameDuration = 1000 / 60;
+                const totalFrames = Math.round(animationDuration / frameDuration);
+                let frame = 0;
+                
+                const animationInterval = setInterval(() => {
+                    frame++;
+                    const progress = Math.min(frame / totalFrames, 1);
+                    const easeOut = 1 - Math.pow(1 - progress, 3);
+                    
+                    if (progress > 0.7) {
+                        if (isNumberMode) {
+                            const min = parseInt(minNumberInput.value) || 1;
+                            const max = parseInt(maxNumberInput.value) || 100;
+                            const excludeNumbers = parseExcludeNumbers(excludeNumbersInput.value);
+                            
+                            const range = Math.max(1, Math.floor((max - min) * (1 - easeOut) * 0.5));
+                            const minRange = Math.max(min, targetValue - range);
+                            const maxRange = Math.min(max, targetValue + range);
+                            
+                            let availableNumbers = [];
+                            for (let i = minRange; i <= maxRange; i++) {
+                                if (!excludeNumbers.includes(i)) {
+                                    availableNumbers.push(i);
+                                }
+                            }
+                            
+                            if (availableNumbers.length === 0) {
+                                for (let i = min; i <= max; i++) {
+                                    if (!excludeNumbers.includes(i)) {
+                                        availableNumbers.push(i);
+                                    }
+                                }
+                            }
+                            
+                            currentValue = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
+                        } else {
+                            const excludeNames = parseExcludeNames(excludeNamesInput.value);
+                            const availableNames = nameRoster.filter(name => !excludeNames.includes(name));
+                            
+                            if (availableNames.length > 0) {
+                                const randomIndex = Math.floor(Math.random() * availableNames.length);
+                                currentValue = availableNames[randomIndex];
+                            } else {
+                                const randomIndex = Math.floor(Math.random() * nameRoster.length);
+                                currentValue = nameRoster[randomIndex];
+                            }
+                        }
+                    } else {
+                        if (isNumberMode) {
+                            const min = parseInt(minNumberInput.value) || 1;
+                            const max = parseInt(maxNumberInput.value) || 100;
+                            const excludeNumbers = parseExcludeNumbers(excludeNumbersInput.value);
+                            currentValue = generateRandomNumber(min, max, excludeNumbers);
+                        } else {
+                            if (nameRoster.length > 0) {
+                                const randomIndex = Math.floor(Math.random() * nameRoster.length);
+                                currentValue = nameRoster[randomIndex];
+                            } else {
+                                currentValue = "无数据";
+                            }
+                        }
+                    }
+                    
+                    numberDisplay.textContent = currentValue;
+                    
+                    if (settings.soundEffect) {
+                        // 这里可以添加音效播放代码
+                    }
+                    
+                    if (progress === 1) {
+                        clearInterval(animationInterval);
+                        
+                        const now = new Date();
+                        const timeString = now.toLocaleString('zh-CN', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        });
+                        
+                        drawHistory.unshift({
+                            value: currentValue,
+                            time: timeString,
+                            mode: isNumberMode ? 'number' : 'roster'
+                        });
+                        
+                        const maxHistory = settings.maxHistory || 50;
+                        if (drawHistory.length > maxHistory) {
+                            drawHistory = drawHistory.slice(0, maxHistory);
+                        }
+                        
+                        localStorage.setItem('drawHistory', JSON.stringify(drawHistory));
+                        
+                        if (document.querySelector('#nav-history').classList.contains('tab-active')) {
+                            renderHistory();
+                        }
+                        
+                        if (isNumberMode) {
+                            resultText.textContent = `恭喜！抽到了数字 ${currentValue}`;
+                        } else {
+                            resultText.textContent = `恭喜！抽到了 ${currentValue}`;
+                        }
+                        resultText.className = 'text-lg mt-4 text-green-600 font-medium';
+                        
+                        numberDisplay.classList.add('scale-110');
+                        setTimeout(() => {
+                            numberDisplay.classList.remove('scale-110');
+                        }, 300);
+                    }
+                }, frameDuration);
+            }
+            
+            // 事件监听器
+            drawButton.addEventListener('click', function() {
+                let targetValue;
+                
+                if (isNumberMode) {
+                    const min = parseInt(minNumberInput.value) || 1;
+                    const max = parseInt(maxNumberInput.value) || 100;
+                    const excludeNumbersInputValue = excludeNumbersInput.value;
+                    
+                    if (min >= max) {
+                        resultText.textContent = '错误：最小值必须小于最大值';
+                        resultText.className = 'text-lg mt-4 text-red-500 font-medium';
+                        return;
+                    }
+                    
+                    const excludeNumbers = parseExcludeNumbers(excludeNumbersInputValue);
+                    targetValue = generateRandomNumber(min, max, excludeNumbers);
+                    
+                    if (targetValue === null) {
+                        resultText.textContent = '错误：没有可用的数字，请减少排除的数字';
+                        resultText.className = 'text-lg mt-4 text-red-500 font-medium';
+                        return;
+                    }
+                } else {
+                    targetValue = drawRandomName();
+                    if (targetValue === null) return;
+                }
+                
+                drawButton.disabled = true;
+                drawButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i><span>抽取中...</span>';
+                resultText.textContent = '正在抽取...';
+                resultText.className = 'text-lg mt-4 text-gray-600 dark:text-gray-300';
+                
+                animateDraw(targetValue);
+                
+                setTimeout(() => {
+                    drawButton.disabled = false;
+                    drawButton.innerHTML = '<i class="fa fa-play"></i><span>开始抽号</span>';
+                }, 2000);
+            });
+            
+            resetButton.addEventListener('click', function() {
+                if (isNumberMode) {
+                    const settings = JSON.parse(localStorage.getItem('appSettings')) || {};
+                    minNumberInput.value = settings.defaultMin || 1;
+                    maxNumberInput.value = settings.defaultMax || 100;
+                    excludeNumbersInput.value = '';
+                    numberDisplay.textContent = '0';
+                    resultText.textContent = '准备开始抽号';
+                } else {
+                    numberDisplay.textContent = '准备就绪';
+                    resultText.textContent = '请选择花名册';
+                }
+                resultText.className = 'text-lg mt-4 text-gray-600 dark:text-gray-300';
+                
+                numberDisplay.classList.add('scale-90');
+                setTimeout(() => {
+                    numberDisplay.classList.remove('scale-90');
+                }, 300);
+            });
+            
+            clearHistoryButton.addEventListener('click', function() {
+                if (confirm('确定要清空所有历史记录吗？')) {
+                    drawHistory = [];
+                    localStorage.setItem('drawHistory', JSON.stringify(drawHistory));
+                    renderHistory();
+                    
+                    historyList.classList.add('opacity-0');
+                    setTimeout(() => {
+                        historyList.classList.remove('opacity-0');
+                    }, 300);
+                }
+            });
+            
+            exportHistoryButton.addEventListener('click', function() {
+                if (drawHistory.length === 0) {
+                    alert('没有历史记录可导出');
+                    return;
+                }
+                
+                let csvContent = "类型,结果,抽取时间\n";
+                drawHistory.forEach(item => {
+                    const type = item.mode === 'number' ? '数字' : '名字';
+                    csvContent += `${type},${item.value},"${item.time}"\n`;
+                });
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `随机抽号历史记录_${new Date().toISOString().slice(0,10)}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+            
+            historySearchInput.addEventListener('input', function() {
+                currentPage = 1;
+                renderHistory();
+            });
+            
+            pageSizeSelect.addEventListener('change', function() {
+                pageSize = parseInt(this.value);
+                currentPage = 1;
+                renderHistory();
+            });
+            
+            prevPageButton.addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderHistory();
+                }
+            });
+            
+            nextPageButton.addEventListener('click', function() {
+                const totalPages = Math.ceil(filteredHistory.length / pageSize);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderHistory();
+                }
+            });
+            
+            themeSelect.addEventListener('change', function() {
+                applyTheme();
+                saveSettings();
+            });
+            
+            animationSpeedSelect.addEventListener('change', saveSettings);
+            autoSaveHistoryCheckbox.addEventListener('change', saveSettings);
+            soundEffectCheckbox.addEventListener('change', saveSettings);
+            maxHistoryInput.addEventListener('change', saveSettings);
+            defaultMinInput.addEventListener('change', saveSettings);
+            defaultMaxInput.addEventListener('change', saveSettings);
+            
+            backupDataButton.addEventListener('click', function() {
+                const data = {
+                    history: drawHistory,
+                    rosters: savedRosters,
+                    settings: JSON.parse(localStorage.getItem('appSettings')) || {}
+                };
+                
+                const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `随机抽号系统备份_${new Date().toISOString().slice(0,10)}.json`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+            
+            restoreDataButton.addEventListener('click', function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                
+                input.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            
+                            if (confirm('确定要恢复数据吗？这将覆盖当前的历史记录和设置。')) {
+                                if (data.history && Array.isArray(data.history)) {
+                                    drawHistory = data.history;
+                                    localStorage.setItem('drawHistory', JSON.stringify(drawHistory));
+                                }
+                                
+                                if (data.rosters && Array.isArray(data.rosters)) {
+                                    savedRosters = data.rosters;
+                                    localStorage.setItem('savedRosters', JSON.stringify(savedRosters));
+                                    renderSavedRosters();
+                                }
+                                
+                                if (data.settings) {
+                                    localStorage.setItem('appSettings', JSON.stringify(data.settings));
+                                    initSettings();
+                                }
+                                
+                                if (document.querySelector('#nav-history').classList.contains('tab-active')) {
+                                    renderHistory();
+                                }
+                                
+                                if (!isNumberMode) {
+                                    renderRosterList();
+                                }
+                                
+                                alert('数据恢复成功！');
+                            }
+                        } catch (error) {
+                            alert('恢复失败：无效的备份文件');
+                            console.error('恢复失败', error);
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                
+                input.click();
+            });
+            
+            resetAllButton.addEventListener('click', function() {
+                if (confirm('确定要重置所有设置吗？这将清除所有历史记录和自定义设置。')) {
+                    drawHistory = [];
+                    localStorage.setItem('drawHistory', JSON.stringify(drawHistory));
+                    
+                    savedRosters = [];
+                    nameRoster = [];
+                    localStorage.setItem('savedRosters', JSON.stringify(savedRosters));
+                    
+                    localStorage.removeItem('appSettings');
+                    
+                    initSettings();
+                    toggleMode();
+                    
+                    if (document.querySelector('#nav-history').classList.contains('tab-active')) {
+                        renderHistory();
+                    }
+                    
+                    alert('所有设置已重置为默认值！');
+                }
+            });
+            
+            document.addEventListener('keydown', function(event) {
+                if (event.code === 'Space' && !drawButton.disabled && document.querySelector('#nav-home').classList.contains('tab-active')) {
+                    event.preventDefault();
+                    drawButton.click();
+                }
+            });
+            
+            minNumberInput.addEventListener('input', function() {
+                if (this.value === '') return;
+                
+                let value = parseInt(this.value);
+                if (isNaN(value)) {
+                    this.value = '';
+                    return;
+                }
+                
+                value = Math.max(1, Math.min(10000, value));
+                this.value = value;
+                
+                const maxValue = parseInt(maxNumberInput.value) || 100;
+                if (value >= maxValue) {
+                    maxNumberInput.value = value + 1;
+                }
+            });
+            
+            maxNumberInput.addEventListener('input', function() {
+                if (this.value === '') return;
+                
+                let value = parseInt(this.value);
+                if (isNaN(value)) {
+                    this.value = '';
+                    return;
+                }
+                
+                value = Math.max(1, Math.min(10000, value));
+                this.value = value;
+                
+                const minValue = parseInt(minNumberInput.value) || 1;
+                if (value <= minValue) {
+                    minNumberInput.value = Math.max(1, value - 1);
+                }
+            });
+            
+            minNumberInput.addEventListener('blur', function() {
+                if (this.value === '') {
+                    this.value = 1;
+                }
+            });
+            
+            maxNumberInput.addEventListener('blur', function() {
+                if (this.value === '') {
+                    this.value = 100;
+                }
+            });
+            
+            modeRadios.forEach(radio => {
+                radio.addEventListener('change', toggleMode);
+            });
+            
+            rosterFileInput.addEventListener('change', handleRosterUpload);
+            
+            saveRosterButton.addEventListener('click', saveRoster);
+            
+            currentRosterSelect.addEventListener('change', function() {
+                const selectedRoster = this.value;
+                if (!selectedRoster) {
+                    nameRoster = [];
+                    renderRosterList();
+                    return;
+                }
+                
+                const roster = savedRosters.find(r => r.name === selectedRoster);
+                if (roster) {
+                    nameRoster = [...roster.items];
+                    renderRosterList();
+                    
+                    if (!isNumberMode) {
+                        resultText.textContent = `已加载 ${nameRoster.length} 个名字`;
+                        resultText.className = 'text-lg mt-4 text-green-600 font-medium';
+                    }
+                }
+            });
+            
+            // 初始化应用
+            initSettings();
+            initNavigation();
+        });
+    </script>
+</body>
+</html>
