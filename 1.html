@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>零屿文件格式转换工具 - 格式指南</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366f1',
+            secondary: '#818cf8',
+            tertiary: '#a5b4fc',
+            light: '#e0e7ff',
+            dark: '#4f46e5',
+            darkbg: '#0f172a',
+            darkcard: '#1e293b'
+          },
+          fontFamily: {
+            inter: ['Inter', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/css">
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .transition-custom {
+        transition: all 0.3s ease;
+      }
+      .shadow-custom {
+        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+      }
+      .shadow-dark {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      }
+      .hover-scale {
+        transition: transform 0.3s ease;
+      }
+      .hover-scale:hover {
+        transform: translateY(-5px);
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .dark-glass {
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+    }
+    
+    .animated-gradient {
+      background: linear-gradient(-45deg, #6366f1, #8b5cf6, #ec4899, #f43f5e);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+    }
+    
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+    
+    .file-drop-area {
+      transition: all 0.3s ease;
+    }
+    
+    .file-drop-area.active {
+      border-color: #6366f1;
+      background-color: rgba(99, 102, 241, 0.05);
+    }
+    
+    .theme-toggle {
+      position: relative;
+      width: 60px;
+      height: 30px;
+      border-radius: 15px;
+      background: #e2e8f0;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    
+    .theme-toggle.dark {
+      background: #334155;
+    }
+    
+    .toggle-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+    
+    .theme-toggle.dark .toggle-thumb {
+      transform: translateX(30px);
+      background: #0f172a;
+    }
+    
+    .format-guide-nav {
+      position: sticky;
+      top: 80px;
+      align-self: start;
+      z-index: 20; /* 增加z-index确保在顶层 */
+    }
+    
+    .format-example {
+      border-radius: 8px;
+      overflow: hidden;
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      max-height: 300px;
+    }
+    
+    .dark .format-example {
+      background-color: #1e293b;
+      border-color: #334155;
+    }
+    
+    .format-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    
+    .badge-txt { background-color: #dbeafe; color: #1d4ed8; }
+    .badge-csv { background-color: #dcfce7; color: #166534; }
+    .badge-xls { background-color: #ffedd5; color: #9a3412; }
+    
+    .dark .badge-txt { background-color: #1e3a8a; color: #dbeafe; }
+    .dark .badge-csv { background-color: #166534; color: #dcfce7; }
+    .dark .badge-xls { background-color: #9a3412; color: #ffedd5; }
+    
+    .format-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .format-table th, .format-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .dark .format-table th, .dark .format-table td {
+      border-bottom: 1px solid #334155;
+    }
+    
+    .format-table th {
+      background-color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    .dark .format-table th {
+      background-color: #1e293b;
+    }
+    
+    .guide-step {
+      counter-increment: step-counter;
+      position: relative;
+      padding-left: 3.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .guide-step::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 2.5rem;
+      height: 2.5rem;
+      background-color: #e0e7ff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #4f46e5;
+      font-size: 1.25rem;
+    }
+    
+    .dark .guide-step::before {
+      background-color: #312e81;
+      color: #a5b4fc;
+    }
+    
+    /* 新增样式：当前激活的导航项 */
+    .nav-link.active {
+      color: #6366f1;
+      font-weight: 600;
+      background-color: rgba(99, 102, 241, 0.1);
+      border-radius: 6px;
+      padding: 4px 8px;
+    }
+    .dark .nav-link.active {
+      background-color: rgba(99, 102, 241, 0.2);
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-darkbg font-inter text-gray-800 dark:text-gray-200 min-h-screen flex flex-col transition-colors duration-300">
+  <!-- 导航栏 -->
+  <nav class="bg-white dark:bg-darkcard shadow-md dark:shadow-dark sticky top-0 z-50 transition-all duration-300" id="navbar">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-exchange text-primary text-2xl"></i>
+        <a href="index.html" class="text-xl md:text-2xl font-bold text-primary">文件格式转换工具</a>
+      </div>
+      <div class="hidden md:flex items-center space-x-6">
+        <a href="0.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-custom font-medium">首页</a>
+        <a href="1.html" class="text-primary font-medium">格式指南</a>
+        <a href="1.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-custom font-medium">常见问题</a>
+        <a href="https://github.com/Zerith-Isle/FormatZero" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-custom font-medium">
+          <i class="fa fa-github mr-2"></i>项目源码
+        </a>
+        <div class="theme-toggle" id="themeToggle">
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+      <div class="flex items-center">
+        <div class="theme-toggle mr-4 md:hidden" id="themeToggleMobile">
+          <div class="toggle-thumb"></div>
+        </div>
+        <button class="md:hidden text-gray-600 dark:text-gray-300 focus:outline-none" id="menuBtn">
+          <i class="fa fa-bars text-xl"></i>
+        </button>
+      </div>
+    </div>
+    <!-- 移动端菜单 -->
+    <div class="md:hidden hidden bg-white dark:bg-darkcard w-full" id="mobileMenu">
+      <div class="container mx-auto px-4 py-3 flex flex-col space-y-3">
+        <a href="0.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-custom font-medium py-2">首页</a>
+        <a href="1.html" class="text-primary font-medium py-2">格式指南</a>
+        <a href="1.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-custom font-medium py-2">常见问题</a>
+        <a href="https://github.com/Zerith-Isle/FormatZero" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-custom font-medium text-center">
+          <i class="fa fa-github mr-2"></i>项目源码
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容区 -->
+  <main class="flex-grow container mx-auto px-4 py-8">
+    <!-- 页头 -->
+    <div class="mb-12">
+      <h1 class="text-3xl md:text-4xl font-bold mb-4">文件格式转换指南</h1>
+      <p class="text-lg text-gray-600 dark:text-gray-400 max-w-3xl">
+        本指南提供关于文本转TXT/CSV和Excel转CSV的详细格式说明、使用方法和最佳实践，帮助您获得最佳的转换结果。
+      </p>
+    </div>
+    
+    <div class="flex flex-col lg:flex-row gap-8">
+      <!-- 左侧导航 -->
+      <div class="lg:w-1/4 format-guide-nav">
+        <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6 sticky top-24">
+          <h3 class="text-lg font-semibold mb-4">指南目录</h3>
+          <ul class="space-y-3">
+            <li>
+              <a href="#text-conversion" class="text-gray-700 dark:text-gray-300 hover:text-primary transition-custom flex items-center nav-link">
+                <i class="fa fa-file-text-o mr-3 text-primary"></i>
+                文本转换指南
+              </a>
+            </li>
+            <li>
+              <a href="#excel-conversion" class="text-gray-700 dark:text-gray-300 hover:text-primary transition-custom flex items-center mt-3 nav-link">
+                <i class="fa fa-file-excel-o mr-3 text-primary"></i>
+                Excel转换指南
+              </a>
+            </li>
+            <li>
+              <a href="#best-practices" class="text-gray-700 dark:text-gray-300 hover:text-primary transition-custom flex items-center mt-3 nav-link">
+                <i class="fa fa-star mr-3 text-primary"></i>
+                最佳实践
+              </a>
+            </li>
+            <li>
+              <a href="#troubleshooting" class="text-gray-700 dark:text-gray-300 hover:text-primary transition-custom flex items-center mt-3 nav-link">
+                <i class="fa fa-wrench mr-3 text-primary"></i>
+                问题排查
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- 右侧内容 -->
+      <div class="lg:w-3/4">
+        <!-- 文本转换指南 -->
+        <section id="text-conversion" class="mb-16">
+          <div class="flex items-center mb-6">
+            <div class="bg-primary/10 p-3 rounded-lg">
+              <i class="fa fa-file-text-o text-primary text-2xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold ml-4">文本转TXT/CSV指南</h2>
+          </div>
+          
+          <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6 mb-8">
+            <h3 class="text-xl font-semibold mb-4">格式要求</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div class="flex items-center mb-3">
+                  <span class="format-badge badge-txt">TXT</span>
+                  <h4 class="font-medium ml-2">纯文本格式</h4>
+                </div>
+                <ul class="list-disc pl-5 space-y-2 text-gray-700 dark:text-gray-300">
+                  <li>支持任何纯文本内容</li>
+                  <li>保留所有原始格式（空格、换行等）</li>
+                  <li>无特定结构要求</li>
+                  <li>文件编码：UTF-8</li>
+                </ul>
+              </div>
+              
+              <div>
+                <div class="flex items-center mb-3">
+                  <span class="format-badge badge-csv">CSV</span>
+                  <h4 class="font-medium ml-2">CSV格式要求</h4>
+                </div>
+                <ul class="list-disc pl-5 space-y-2 text-gray-700 dark:text-gray-300">
+                  <li>使用分隔符分隔数据字段</li>
+                  <li>每行代表一条记录</li>
+                  <li>字段包含特殊字符时需用引号包裹</li>
+                  <li>支持逗号、分号、制表符等分隔符</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6 mb-8">
+            <h3 class="text-xl font-semibold mb-4">转换步骤</h3>
+            <div class="space-y-6">
+              <div class="guide-step">
+                <h4 class="text-lg font-semibold mb-2">1. 输入文本内容</h4>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                  在文本区域输入或粘贴您的文本内容。对于CSV转换，确保数据具有清晰的结构（如表格数据）。
+                </p>
+                <div class="format-example p-4 text-sm">
+                  <pre class="whitespace-pre-wrap">姓名,邮箱,电话
+张三,zhangsan@example.com,13800138000
+李四,lisi@example.com,13900139000</pre>
+                </div>
+              </div>
+              
+              <div class="guide-step">
+                <h4 class="text-lg font-semibold mb-2">2. 选择分隔符</h4>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                  根据您的数据格式选择合适的字段分隔符：
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div class="flex items-center mb-2">
+                      <div class="w-3 h-3 rounded-full bg-primary mr-2"></div>
+                      <span class="font-medium">逗号 (,)</span>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">标准CSV格式，适用于大多数情况</p>
+                  </div>
+                  <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div class="flex items-center mb-2">
+                      <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                      <span class="font-medium">分号 (;)</span>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">适用于包含逗号的数据字段</p>
+                  </div>
+                  <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div class="flex items-center mb-2">
+                      <div class="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
+                      <span class="font-medium">制表符 (Tab)</span>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">适合从表格复制的内容</p>
+                  </div>
+                  <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div class="flex items-center mb-2">
+                      <div class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                      <span class="font-medium">空格</span>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">适合简单分隔的文本数据</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="guide-step">
+                <h4 class="text-lg font-semibold mb-2">3. 选择输出格式</h4>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                  根据您的需求选择输出格式：
+                </p>
+                <div class="flex flex-wrap gap-4">
+                  <div class="flex items-center">
+                    <div class="w-4 h-4 rounded-full bg-primary mr-2"></div>
+                    <span>TXT - 纯文本文件</span>
+                  </div>
+                  <div class="flex items-center">
+                    <div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div>
+                    <span>CSV - 逗号分隔值文件</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Excel转换指南 -->
+        <section id="excel-conversion" class="mb-16">
+          <div class="flex items-center mb-6">
+            <div class="bg-primary/10 p-3 rounded-lg">
+              <i class="fa fa-file-excel-o text-primary text-2xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold ml-4">Excel转CSV指南</h2>
+          </div>
+          
+          <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6 mb-8">
+            <h3 class="text-xl font-semibold mb-4">支持的文件格式</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center">
+                <div class="text-4xl text-green-500 mb-2">
+                  <i class="fa fa-file-excel-o"></i>
+                </div>
+                <h4 class="font-semibold">.xlsx</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Excel 2007+ 工作簿</p>
+              </div>
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center">
+                <div class="text-4xl text-yellow-500 mb-2">
+                  <i class="fa fa-file-excel-o"></i>
+                </div>
+                <h4 class="font-semibold">.xls</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Excel 97-2003 工作簿</p>
+              </div>
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center">
+                <div class="text-4xl text-blue-500 mb-2">
+                  <i class="fa fa-file-text-o"></i>
+                </div>
+                <h4 class="font-semibold">.csv</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400">转换后的输出格式</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6">
+            <h3 class="text-xl font-semibold mb-4">转换说明</h3>
+            <div class="space-y-6">
+              <div class="guide-step">
+                <h4 class="text-lg font-semibold mb-2">1. 上传Excel文件</h4>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                  将Excel文件拖放到指定区域或点击浏览按钮选择文件。支持.xlsx和.xls格式。
+                </p>
+                <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4">
+                  <div class="text-sm text-gray-600 dark:text-gray-400">
+                    <i class="fa fa-info-circle text-primary mr-2"></i>
+                    文件大小限制：无限制（受设备内存限制）
+                  </div>
+                </div>
+              </div>
+              
+              <div class="guide-step">
+                <h4 class="text-lg font-semibold mb-2">2. 选择工作表</h4>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                  如果Excel文件包含多个工作表，请选择要转换的工作表。
+                </p>
+                <div class="format-example p-4 mb-4">
+                  <div class="flex flex-wrap gap-2">
+                    <span class="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">Sheet1</span>
+                    <span class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-sm">Sheet2</span>
+                    <span class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-sm">Sheet3</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="guide-step">
+                <h4 class="text-lg font-semibold mb-2">3. 配置CSV选项</h4>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                  根据您的需求配置CSV输出选项：
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <h5 class="font-semibold mb-2">分隔符</h5>
+                    <div class="space-y-2">
+                      <div class="flex items-center">
+                        <input type="radio" id="delim-comma" name="delimiter" checked class="mr-2">
+                        <label for="delim-comma">逗号 (,)</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input type="radio" id="delim-semicolon" name="delimiter" class="mr-2">
+                        <label for="delim-semicolon">分号 (;)</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input type="radio" id="delim-tab" name="delimiter" class="mr-2">
+                        <label for="delim-tab">制表符 (Tab)</label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <h5 class="font-semibold mb-2">标题行</h5>
+                    <div class="space-y-2">
+                      <div class="flex items-center">
+                        <input type="checkbox" id="include-header" checked class="mr-2">
+                        <label for="include-header">包含标题行</label>
+                      </div>
+                    </div>
+                    
+                    <h5 class="font-semibold mb-2 mt-4">编码</h5>
+                    <div class="space-y-2">
+                      <div class="flex items-center">
+                        <input type="radio" id="encoding-utf8" name="encoding" checked class="mr-2">
+                        <label for="encoding-utf8">UTF-8</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 最佳实践 -->
+        <section id="best-practices" class="mb-16">
+          <div class="flex items-center mb-6">
+            <div class="bg-primary/10 p-3 rounded-lg">
+              <i class="fa fa-star text-primary text-2xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold ml-4">格式转换最佳实践</h2>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6">
+              <h3 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="fa fa-file-text-o text-primary mr-3"></i>
+                文本转换建议
+              </h3>
+              <ul class="space-y-3">
+                <li class="flex items-start">
+                  <i class="fa fa-check-circle text-green-500 mt-1 mr-3"></i>
+                  <span>在转换前清理数据，删除不必要的空行和空格</span>
+                </li>
+                <li class="flex items-start">
+                  <i class="fa fa-check-circle text-green-500 mt-1 mr-3"></i>
+                  <span>对于包含逗号的数据，使用分号作为分隔符以避免冲突</span>
+                </li>
+                <li class="flex items-start">
+                  <i class="fa fa-check-circle text-green-500 mt-1 mr-3"></i>
+                  <span>在字段值中包含引号时，使用双引号转义（例如：""value""）</span>
+                </li>
+                <li class="flex items-start">
+                  <i class="fa fa-check-circle text-green-500 mt-1 mr-3"></i>
+                  <span>确保所有行具有相同数量的字段</span>
+                </li>
+              </ul>
+            </div>
+            
+            <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6">
+              <h3 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="fa fa-file-excel-o text-primary mr-3"></i>
+                Excel转换建议
+              </h3>
+              <ul class="space-y-3">
+                <li class="flex items-start">
+                  <i class="fa fa-check-circle text-green-500 mt-1 mr-3"></i>
+                  <span>在转换前简化复杂公式，保留最终值</span>
+                </li>
+                <li class="flex items-start">
+                  <i class="fa fa-check-circle text-green-500 mt-1 mr-3"></i>
+                  <span>合并单元格应在转换前取消合并</span>
+                </li>
+                <li class="flex items-start">
+                  <i class="fa fa-check-circle text-green-500 mt-1 mr-3"></i>
+                  <span>移除不必要的格式（颜色、边框等）</span>
+                </li>
+                <li class="flex items-start">
+                  <i class="fa fa-check-circle text-green-500 mt-1 mr-3"></i>
+                  <span>日期和时间应统一格式</span>
+                </li>
+              </ul>
+            </div>
+            
+            <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6 md:col-span-2">
+              <h3 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="fa fa-shield text-primary mr-3"></i>
+                数据安全与隐私
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <div class="text-3xl text-primary mb-3">
+                    <i class="fa fa-lock"></i>
+                  </div>
+                  <h4 class="font-semibold mb-2">本地处理</h4>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">所有转换操作在浏览器中完成，文件不会上传到服务器</p>
+                </div>
+                
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <div class="text-3xl text-green-500 mb-3">
+                    <i class="fa fa-trash"></i>
+                  </div>
+                  <h4 class="font-semibold mb-2">自动删除</h4>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">转换完成后，文件会自动从浏览器中删除</p>
+                </div>
+                
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <div class="text-3xl text-purple-500 mb-3">
+                    <i class="fa fa-ban"></i>
+                  </div>
+                  <h4 class="font-semibold mb-2">无数据追踪</h4>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">我们不会收集或存储任何用户数据</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 问题排查 -->
+        <section id="troubleshooting" class="mb-16">
+          <div class="flex items-center mb-6">
+            <div class="bg-primary/10 p-3 rounded-lg">
+              <i class="fa fa-wrench text-primary text-2xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold ml-4">常见问题与解决方案</h2>
+          </div>
+          
+          <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6">
+            <div class="space-y-6">
+              <div>
+                <h3 class="text-lg font-semibold mb-2 flex items-center">
+                  <i class="fa fa-question-circle text-primary mr-2"></i>
+                  转换后的CSV文件在Excel中打开乱码
+                </h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                  这可能是因为编码问题。解决方案：
+                </p>
+                <ol class="list-decimal pl-5 space-y-2 text-gray-700 dark:text-gray-300">
+                  <li>使用文本编辑器（如记事本）打开CSV文件</li>
+                  <li>选择"文件" → "另存为"</li>
+                  <li>在编码选项中选择"UTF-8"</li>
+                  <li>保存文件并使用Excel重新打开</li>
+                </ol>
+              </div>
+              
+              <div>
+                <h3 class="text-lg font-semibold mb-2 flex items-center">
+                  <i class="fa fa-question-circle text-primary mr-2"></i>
+                  转换时数据格式丢失
+                </h3>
+                <p class="text-gray-700 dark:text-gray-300">
+                  CSV是纯文本格式，不支持单元格格式、公式等复杂特性。转换前建议：
+                </p>
+                <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-700 dark:text-gray-300">
+                  <li>将公式替换为计算结果</li>
+                  <li>手动处理合并单元格</li>
+                  <li>简化复杂格式</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 class="text-lg font-semibold mb-2 flex items-center">
+                  <i class="fa fa-question-circle text-primary mr-2"></i>
+                  大文件转换缓慢或失败
+                </h3>
+                <p class="text-gray-700 dark:text-gray-300">
+                  处理大文件时受设备性能限制：
+                </p>
+                <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-700 dark:text-gray-300">
+                  <li>尝试拆分文件为多个小文件</li>
+                  <li>关闭其他占用内存的应用程序</li>
+                  <li>使用更现代的浏览器（Chrome、Firefox等）</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 class="text-lg font-semibold mb-2 flex items-center">
+                  <i class="fa fa-question-circle text-primary mr-2"></i>
+                  字段中包含分隔符导致数据错位
+                </h3>
+                <p class="text-gray-700 dark:text-gray-300">
+                  解决方案：
+                </p>
+                <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-700 dark:text-gray-300">
+                  <li>选择不包含在数据中的分隔符（如分号代替逗号）</li>
+                  <li>在转换前手动处理包含分隔符的字段</li>
+                  <li>确保包含特殊字符的字段用引号包裹</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-gray-800 dark:bg-gray-900 text-white py-12">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center space-x-2 mb-4">
+            <i class="fa fa-exchange text-primary text-2xl"></i>
+            <h3 class="text-xl font-bold">文件格式转换工具</h3>
+          </div>
+          <p class="text-gray-400 mb-4">简单高效的在线文件转换解决方案，保护您的数据安全。</p>
+          <div class="flex space-x-4">
+            <a href="https://github.com/Zerith-Isle" class="text-gray-400 hover:text-primary transition-custom">
+              <i class="fa fa-github text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-400 hover:text-primary transition-custom">
+              <i class="fa fa-twitter text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-400 hover:text-primary transition-custom">
+              <i class="fa fa-linkedin text-xl"></i>
+            </a>
+          </div>
+        </div>
+        
+        <div>
+          <h4 class="text-lg font-semibold mb-4">功能</h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">文本转 TXT/CSV</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">Excel 转 CSV</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">PDF 转换（即将推出）</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="text-lg font-semibold mb-4">资源</h4>
+          <ul class="space-y-2">
+            <li><a href="1.html" class="text-gray-400 hover:text-primary transition-custom">格式指南</a></li>
+            <li><a href="1.html" class="text-gray-400 hover:text-primary transition-custom">常见问题</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">API 文档(开发中)</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="text-lg font-semibold mb-4">开发者信息</h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">零屿工作室</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">隐私政策</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">服务条款</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+        <p>&copy; 2025 零屿文件格式转换工具. 保留所有权利.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // 主题切换功能
+    const themeToggle = document.getElementById('themeToggle');
+    const themeToggleMobile = document.getElementById('themeToggleMobile');
+    
+    function setTheme(isDark) {
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    }
+    
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(!isDark);
+      
+      // 更新切换按钮状态
+      themeToggle.classList.toggle('dark', !isDark);
+      themeToggleMobile.classList.toggle('dark', !isDark);
+    }
+    
+    // 初始化主题
+    const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    setTheme(savedTheme === 'dark');
+    themeToggle.classList.toggle('dark', savedTheme === 'dark');
+    themeToggleMobile.classList.toggle('dark', savedTheme === 'dark');
+    
+    themeToggle.addEventListener('click', toggleTheme);
+    themeToggleMobile.addEventListener('click', toggleTheme);
+    
+    // 导航栏滚动效果
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 10) {
+        navbar.classList.add('py-2', 'shadow-lg', 'bg-white/95', 'dark:bg-darkcard/95', 'backdrop-blur-sm');
+        navbar.classList.remove('py-3', 'shadow-md');
+      } else {
+        navbar.classList.add('py-3', 'shadow-md');
+        navbar.classList.remove('py-2', 'shadow-lg', 'bg-white/95', 'dark:bg-darkcard/95', 'backdrop-blur-sm');
+      }
+    });
+
+    // 移动端菜单
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    menuBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+      if (mobileMenu.classList.contains('hidden')) {
+        menuBtn.innerHTML = '<i class="fa fa-bars text-xl"></i>';
+      } else {
+        menuBtn.innerHTML = '<i class="fa fa-times text-xl"></i>';
+      }
+    });
+
+    // 平滑滚动到锚点
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        
+        const targetId = this.getAttribute('href');
+        const targetElement = document.querySelector(targetId);
+        
+        if (targetElement) {
+          window.scrollTo({
+            top: targetElement.offsetTop - 80,
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
+    
+    // 修复：高亮当前导航项
+    document.addEventListener('DOMContentLoaded', function() {
+      const navLinks = document.querySelectorAll('.format-guide-nav .nav-link');
+      const sections = document.querySelectorAll('section[id]');
+      
+      // 高亮导航项函数
+      function highlightNav() {
+        let current = '';
+        
+        sections.forEach(section => {
+          const sectionTop = section.offsetTop;
+          const sectionHeight = section.clientHeight;
+          if (window.scrollY >= (sectionTop - 120)) {
+            current = section.getAttribute('id');
+          }
+        });
+        
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href').substring(1) === current) {
+            link.classList.add('active');
+          }
+        });
+      }
+      
+      // 初始加载时高亮
+      highlightNav();
+      
+      // 滚动时高亮
+      window.addEventListener('scroll', highlightNav);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>零屿文件格式转换工具</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366f1',
+            secondary: '#818cf8',
+            tertiary: '#a5b4fc',
+            light: '#e0e7ff',
+            dark: '#4f46e5',
+            darkbg: '#0f172a',
+            darkcard: '#1e293b'
+          },
+          fontFamily: {
+            inter: ['Inter', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/css">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .transition-custom {
+        transition: all 0.3s ease;
+      }
+      .shadow-custom {
+        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+      }
+      .shadow-dark {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      }
+      .hover-scale {
+        transition: transform 0.3s ease;
+      }
+      .hover-scale:hover {
+        transform: translateY(-5px);
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .dark-glass {
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+    }
+    
+    .animated-gradient {
+      background: linear-gradient(-45deg, #6366f1, #8b5cf6, #ec4899, #f43f5e);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+    }
+    
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+    
+    .file-drop-area {
+      transition: all 0.3s ease;
+    }
+    
+    .file-drop-area.active {
+      border-color: #6366f1;
+      background-color: rgba(99, 102, 241, 0.05);
+    }
+    
+    .theme-toggle {
+      position: relative;
+      width: 60px;
+      height: 30px;
+      border-radius: 15px;
+      background: #e2e8f0;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    
+    .theme-toggle.dark {
+      background: #334155;
+    }
+    
+    .toggle-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+    
+    .theme-toggle.dark .toggle-thumb {
+      transform: translateX(30px);
+      background: #0f172a;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-darkbg font-inter text-gray-800 dark:text-gray-200 min-h-screen flex flex-col transition-colors duration-300">
+  <!-- 导航栏 -->
+  <nav class="bg-white dark:bg-darkcard shadow-md dark:shadow-dark sticky top-0 z-50 transition-all duration-300" id="navbar">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-exchange text-primary text-2xl"></i>
+        <h1 class="text-xl md:text-2xl font-bold text-primary">文件格式转换工具</h1>
+      </div>
+      <div class="hidden md:flex items-center space-x-6">
+        <a href="0.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-custom font-medium">首页</a>
+        <a href="1.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-custom font-medium">格式指南</a>
+        <a href="2.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-custom font-medium">常见问题</a>
+        <a href="https://github.com/Zerith-Isle/FormatZero" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-custom font-medium">
+          <i class="fa fa-github mr-2"></i>项目源码
+        </a>
+        <div class="theme-toggle" id="themeToggle">
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+      <div class="flex items-center">
+        <div class="theme-toggle mr-4 md:hidden" id="themeToggleMobile">
+          <div class="toggle-thumb"></div>
+        </div>
+        <button class="md:hidden text-gray-600 dark:text-gray-300 focus:outline-none" id="menuBtn">
+          <i class="fa fa-bars text-xl"></i>
+        </button>
+      </div>
+    </div>
+    <!-- 移动端菜单 -->
+    <div class="md:hidden hidden bg-white dark:bg-darkcard w-full" id="mobileMenu">
+      <div class="container mx-auto px-4 py-3 flex flex-col space-y-3">
+        <a href="0.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-custom font-medium py-2">首页</a>
+        <a href="1.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-custom font-medium py-2">格式指南</a>
+        <a href="2.html" class="text-gray-600 dark:text-gray-300 hover:text-primary transition-custom font-medium py-2">常见问题</a>
+        <a href="https://github.com/Zerith-Isle/FormatZero" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-custom font-medium text-center">
+          <i class="fa fa-github mr-2"></i>项目源码
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容区 -->
+  <main class="flex-grow container mx-auto px-4 py-8">
+    <!-- 功能区 -->
+    <section class="text-center mb-12 relative overflow-hidden rounded-2xl p-8 animated-gradient">
+      <div class="absolute inset-0 bg-white/80 dark:bg-darkbg/80"></div>
+      <div class="relative z-10">
+        <h2 class="text-[clamp(1.8rem,5vw,3rem)] font-bold text-gray-800 dark:text-white mb-4">简单高效的文件格式转换</h2>
+        <p class="text-gray-600 dark:text-gray-300 text-lg max-w-3xl mx-auto mb-8">
+          轻松将文本转换为 TXT 或 CSV 格式，以及将 Excel 文件转换为 CSV。完全在您的浏览器中运行，保护您的数据安全。
+        </p>
+        <div class="flex flex-wrap justify-center gap-4">
+          <div class="flex items-center bg-white/70 dark:bg-darkcard px-4 py-2 rounded-full text-primary backdrop-blur-sm">
+            <i class="fa fa-shield mr-2"></i>
+            <span>端到端加密</span>
+          </div>
+          <div class="flex items-center bg-white/70 dark:bg-darkcard px-4 py-2 rounded-full text-primary backdrop-blur-sm">
+            <i class="fa fa-bolt mr-2"></i>
+            <span>无需注册</span>
+          </div>
+          <div class="flex items-center bg-white/70 dark:bg-darkcard px-4 py-2 rounded-full text-primary backdrop-blur-sm">
+            <i class="fa fa-ban mr-2"></i>
+            <span>无文件大小限制</span>
+          </div>
+          <div class="flex items-center bg-white/70 dark:bg-darkcard px-4 py-2 rounded-full text-primary backdrop-blur-sm">
+            <i class="fa fa-trash mr-2"></i>
+            <span>转换后自动删除</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 转换工具区 -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+      <!-- 文本转换 -->
+      <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6 hover-scale glass dark:dark-glass">
+        <div class="flex items-center mb-6">
+          <div class="bg-primary/10 p-3 rounded-lg">
+            <i class="fa fa-file-text-o text-primary text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold ml-4">文本转换</h3>
+        </div>
+        
+        <div class="mb-4">
+          <label for="textContent" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">输入文本内容</label>
+          <textarea id="textContent" rows="6" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm" placeholder="请输入需要转换的文本..."></textarea>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div>
+            <label for="textDelimiter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">分隔符</label>
+            <select id="textDelimiter" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+              <option value="comma">逗号 (,)</option>
+              <option value="semicolon">分号 (;)</option>
+              <option value="tab">制表符 (Tab)</option>
+              <option value="space">空格</option>
+            </select>
+          </div>
+          <div>
+            <label for="textFormat" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">输出格式</label>
+            <select id="textFormat" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+              <option value="txt">TXT 文件</option>
+              <option value="csv">CSV 文件</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <button id="convertTextBtn" class="bg-primary hover:bg-dark text-white px-6 py-3 rounded-lg transition-custom font-medium flex items-center pulse">
+            <i class="fa fa-magic mr-2"></i>
+            转换并下载
+          </button>
+          <button id="clearTextBtn" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-custom">
+            <i class="fa fa-eraser mr-1"></i> 清空
+          </button>
+        </div>
+      </div>
+
+      <!-- Excel 转换 -->
+      <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6 hover-scale glass dark:dark-glass">
+        <div class="flex items-center mb-6">
+          <div class="bg-primary/10 p-3 rounded-lg">
+            <i class="fa fa-file-excel-o text-primary text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold ml-4">Excel 转换</h3>
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">上传 Excel 文件</label>
+          <div class="file-drop-area border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-8 text-center hover:border-primary transition-custom cursor-pointer" id="excelDropArea">
+            <input type="file" id="excelFile" accept=".xlsx, .xls" class="hidden">
+            <i class="fa fa-cloud-upload text-4xl text-gray-400 mb-4"></i>
+            <p class="text-gray-600 dark:text-gray-400 mb-2">拖放 Excel 文件到此处，或</p>
+            <button type="button" class="text-primary hover:text-dark font-medium transition-custom" id="browseExcelBtn">
+              <i class="fa fa-folder-open-o mr-1"></i> 浏览文件
+            </button>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">支持 .xlsx 和 .xls 格式</p>
+          </div>
+        </div>
+        
+        <div class="mb-6 hidden" id="excelOptions">
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label for="excelSheet" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择工作表</label>
+              <select id="excelSheet" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                <option value="">请先上传文件</option>
+              </select>
+            </div>
+            <div>
+              <label for="excelDelimiter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">CSV 分隔符</label>
+              <select id="excelDelimiter" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                <option value="comma">逗号 (,)</option>
+                <option value="semicolon">分号 (;)</option>
+                <option value="tab">制表符 (Tab)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="flex items-center mb-4">
+            <input type="checkbox" id="includeHeader" class="w-4 h-4 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-primary" checked>
+            <label for="includeHeader" class="ml-2 text-sm text-gray-700 dark:text-gray-300">包含标题行</label>
+          </div>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <button id="convertExcelBtn" class="bg-primary hover:bg-dark text-white px-6 py-3 rounded-lg transition-custom font-medium flex items-center opacity-50 cursor-not-allowed" disabled>
+            <i class="fa fa-magic mr-2"></i>
+            转换并下载
+          </button>
+          <button id="resetExcelBtn" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-custom opacity-50 cursor-not-allowed" disabled>
+            <i class="fa fa-refresh mr-1"></i> 重置
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 转换历史 -->
+    <section class="mb-16">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-semibold flex items-center">
+          <i class="fa fa-history text-primary mr-2"></i>
+          最近转换记录
+        </h3>
+        <button id="clearHistoryBtn" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-custom">
+          <i class="fa fa-trash mr-1"></i> 清空历史
+        </button>
+      </div>
+      
+      <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">文件名</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">转换类型</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">日期</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">操作</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-darkcard divide-y divide-gray-200 dark:divide-gray-700" id="historyTable">
+              <tr class="text-center">
+                <td colspan="4" class="px-6 py-12 text-gray-500 dark:text-gray-400">暂无转换记录</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 特性介绍 -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+      <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6 hover-scale glass dark:dark-glass">
+        <div class="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+          <i class="fa fa-lock text-primary text-xl"></i>
+        </div>
+        <h4 class="text-lg font-semibold mb-2">数据安全</h4>
+        <p class="text-gray-600 dark:text-gray-400">所有文件处理都在您的浏览器中完成，不会上传到我们的服务器。转换完成后，文件会自动从您的浏览器中删除。</p>
+      </div>
+      
+      <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6 hover-scale glass dark:dark-glass">
+        <div class="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+          <i class="fa fa-bolt text-primary text-xl"></i>
+        </div>
+        <h4 class="text-lg font-semibold mb-2">快速转换</h4>
+        <p class="text-gray-600 dark:text-gray-400">利用浏览器的本地处理能力，实现即时转换，无需等待服务器响应。大型文件也能快速处理。</p>
+      </div>
+      
+      <div class="bg-white dark:bg-darkcard rounded-2xl shadow-custom dark:shadow-dark p-6 hover-scale glass dark:dark-glass">
+        <div class="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+          <i class="fa fa-users text-primary text-xl"></i>
+        </div>
+        <h4 class="text-lg font-semibold mb-2">用户友好</h4>
+        <p class="text-gray-600 dark:text-gray-400">简洁直观的界面设计，即使是初次使用的用户也能轻松完成文件转换操作。</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-gray-800 dark:bg-gray-900 text-white py-12">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center space-x-2 mb-4">
+            <i class="fa fa-exchange text-primary text-2xl"></i>
+            <h3 class="text-xl font-bold">文件格式转换工具</h3>
+          </div>
+          <p class="text-gray-400 mb-4">简单高效的在线文件转换解决方案，保护您的数据安全。</p>
+          <div class="flex space-x-4">
+            <a href="https://github.com/Zerith-Isle" class="text-gray-400 hover:text-primary transition-custom">
+              <i class="fa fa-github text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-400 hover:text-primary transition-custom">
+              <i class="fa fa-twitter text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-400 hover:text-primary transition-custom">
+              <i class="fa fa-linkedin text-xl"></i>
+            </a>
+          </div>
+        </div>
+        
+        <div>
+          <h4 class="text-lg font-semibold mb-4">功能</h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">文本转 TXT/CSV</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">Excel 转 CSV</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">PDF 转换（即将推出）</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="text-lg font-semibold mb-4">资源</h4>
+          <ul class="space-y-2">
+            <li><a href="1.html" class="text-gray-400 hover:text-primary transition-custom">格式指南</a></li>
+            <li><a href="2.html" class="text-gray-400 hover:text-primary transition-custom">常见问题</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">API 文档(开发中)</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="text-lg font-semibold mb-4">开发者信息</h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">零屿工作室</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">隐私政策</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-primary transition-custom">服务条款</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+        <p>&copy; 2025 零屿文件格式转换工具. 保留所有权利.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 转换成功提示 -->
+  <div id="successToast" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center z-50">
+    <i class="fa fa-check-circle mr-2"></i>
+    <span id="successMessage">转换成功！</span>
+  </div>
+
+  <script>
+    // 主题切换功能
+    const themeToggle = document.getElementById('themeToggle');
+    const themeToggleMobile = document.getElementById('themeToggleMobile');
+    
+    function setTheme(isDark) {
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    }
+    
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(!isDark);
+      
+      // 更新切换按钮状态
+      themeToggle.classList.toggle('dark', !isDark);
+      themeToggleMobile.classList.toggle('dark', !isDark);
+    }
+    
+    // 初始化主题
+    const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    setTheme(savedTheme === 'dark');
+    themeToggle.classList.toggle('dark', savedTheme === 'dark');
+    themeToggleMobile.classList.toggle('dark', savedTheme === 'dark');
+    
+    themeToggle.addEventListener('click', toggleTheme);
+    themeToggleMobile.addEventListener('click', toggleTheme);
+    
+    // 导航栏滚动效果
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 10) {
+        navbar.classList.add('py-2', 'shadow-lg', 'bg-white/95', 'dark:bg-darkcard/95', 'backdrop-blur-sm');
+        navbar.classList.remove('py-3', 'shadow-md');
+      } else {
+        navbar.classList.add('py-3', 'shadow-md');
+        navbar.classList.remove('py-2', 'shadow-lg', 'bg-white/95', 'dark:bg-darkcard/95', 'backdrop-blur-sm');
+      }
+    });
+
+    // 移动端菜单
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    menuBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+      if (mobileMenu.classList.contains('hidden')) {
+        menuBtn.innerHTML = '<i class="fa fa-bars text-xl"></i>';
+      } else {
+        menuBtn.innerHTML = '<i class="fa fa-times text-xl"></i>';
+      }
+    });
+
+    // 文本转换功能
+    const textContent = document.getElementById('textContent');
+    const textDelimiter = document.getElementById('textDelimiter');
+    const textFormat = document.getElementById('textFormat');
+    const convertTextBtn = document.getElementById('convertTextBtn');
+    const clearTextBtn = document.getElementById('clearTextBtn');
+
+    convertTextBtn.addEventListener('click', () => {
+      if (!textContent.value.trim()) {
+        showToast('请输入需要转换的文本内容');
+        return;
+      }
+
+      let delimiter;
+      switch(textDelimiter.value) {
+        case 'comma': delimiter = ','; break;
+        case 'semicolon': delimiter = ';'; break;
+        case 'tab': delimiter = '\t'; break;
+        case 'space': delimiter = ' '; break;
+      }
+
+      const format = textFormat.value;
+      const content = textContent.value;
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const fileName = `converted.${format}`;
+
+      downloadFile(blob, fileName);
+      addToHistory(fileName, `文本 → ${format.toUpperCase()}`);
+    });
+
+    clearTextBtn.addEventListener('click', () => {
+      textContent.value = '';
+    });
+
+    // Excel 转换功能
+    const excelFile = document.getElementById('excelFile');
+    const excelDropArea = document.getElementById('excelDropArea');
+    const browseExcelBtn = document.getElementById('browseExcelBtn');
+    const excelOptions = document.getElementById('excelOptions');
+    const excelSheet = document.getElementById('excelSheet');
+    const excelDelimiter = document.getElementById('excelDelimiter');
+    const includeHeader = document.getElementById('includeHeader');
+    const convertExcelBtn = document.getElementById('convertExcelBtn');
+    const resetExcelBtn = document.getElementById('resetExcelBtn');
+
+    let workbook = null;
+    let originalFileName = '';
+
+    browseExcelBtn.addEventListener('click', () => {
+      excelFile.click();
+    });
+
+    excelFile.addEventListener('change', handleExcelFile);
+
+    // 拖放功能
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      excelDropArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      excelDropArea.addEventListener(eventName, () => {
+        excelDropArea.classList.add('active');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      excelDropArea.addEventListener(eventName, () => {
+        excelDropArea.classList.remove('active');
+      }, false);
+    });
+
+    excelDropArea.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+
+      if (files.length) {
+        handleExcelFile({ target: { files } });
+      }
+    }
+
+    function handleExcelFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        showToast('请上传 Excel 文件 (.xlsx 或 .xls)');
+        return;
+      }
+
+      originalFileName = file.name.replace(/\.(xlsx|xls)$/, '');
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          workbook = XLSX.read(data, { type: 'array' });
+          
+          // 填充工作表选择下拉框
+          excelSheet.innerHTML = '';
+          workbook.SheetNames.forEach(sheetName => {
+            const option = document.createElement('option');
+            option.value = sheetName;
+            option.textContent = sheetName;
+            excelSheet.appendChild(option);
+          });
+          
+          excelOptions.classList.remove('hidden');
+          convertExcelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          convertExcelBtn.disabled = false;
+          resetExcelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          resetExcelBtn.disabled = false;
+          
+          showToast('文件已成功加载');
+        } catch (error) {
+          showToast('文件解析失败，请尝试其他文件');
+          console.error('Excel 文件解析错误:', error);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    convertExcelBtn.addEventListener('click', () => {
+      if (!workbook) {
+        showToast('请先上传 Excel 文件');
+        return;
+      }
+
+      const sheetName = excelSheet.value;
+      if (!sheetName) {
+        showToast('请选择工作表');
+        return;
+      }
+
+      const sheet = workbook.Sheets[sheetName];
+      
+      let delimiter;
+      switch(excelDelimiter.value) {
+        case 'comma': delimiter = ','; break;
+        case 'semicolon': delimiter = ';'; break;
+        case 'tab': delimiter = '\t'; break;
+      }
+
+      const options = {
+        FS: delimiter,
+        header: includeHeader.checked ? 'A' : 1
+      };
+
+      const csvContent = XLSX.utils.sheet_to_csv(sheet, options);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+      const fileName = `${originalFileName}.csv`;
+
+      downloadFile(blob, fileName);
+      addToHistory(fileName, 'Excel → CSV');
+    });
+
+    resetExcelBtn.addEventListener('click', () => {
+      excelFile.value = '';
+      workbook = null;
+      originalFileName = '';
+      excelOptions.classList.add('hidden');
+      convertExcelBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      convertExcelBtn.disabled = true;
+      resetExcelBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      resetExcelBtn.disabled = true;
+      excelSheet.innerHTML = '<option value="">请先上传文件</option>';
+      showToast('已重置 Excel 转换');
+    });
+
+    // 下载文件功能
+    function downloadFile(blob, fileName) {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    }
+
+    // 历史记录功能
+    const historyTable = document.getElementById('historyTable');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    let conversionHistory = JSON.parse(localStorage.getItem('fileConverterHistory')) || [];
+
+    function addToHistory(fileName, conversionType) {
+      const now = new Date();
+      const dateString = now.toLocaleString();
+      
+      const historyItem = {
+        fileName,
+        conversionType,
+        date: dateString
+      };
+      
+      conversionHistory.unshift(historyItem);
+      
+      // 限制历史记录最多10条
+      if (conversionHistory.length > 10) {
+        conversionHistory = conversionHistory.slice(0, 10);
+      }
+      
+      localStorage.setItem('fileConverterHistory', JSON.stringify(conversionHistory));
+      updateHistoryTable();
+      
+      showToast('转换成功！文件已开始下载');
+    }
+
+    function updateHistoryTable() {
+      if (conversionHistory.length === 0) {
+        historyTable.innerHTML = '<tr class="text-center"><td colspan="4" class="px-6 py-12 text-gray-500 dark:text-gray-400">暂无转换记录</td></tr>';
+        return;
+      }
+      
+      historyTable.innerHTML = '';
+      
+      conversionHistory.forEach(item => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50 dark:hover:bg-gray-800 transition-custom';
+        
+        row.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="flex items-center">
+              <div class="flex-shrink-0 h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <i class="fa fa-file-o text-primary"></i>
+              </div>
+              <div class="ml-4">
+                <div class="text-sm font-medium text-gray-900 dark:text-gray-200">${item.fileName}</div>
+              </div>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900 dark:text-gray-200">${item.conversionType}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+            ${item.date}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <button class="text-primary hover:text-dark dark:hover:text-primary-300 transition-custom download-history" data-file="${item.fileName}">
+              <i class="fa fa-download mr-1"></i> 下载
+            </button>
+          </td>
+        `;
+        
+        historyTable.appendChild(row);
+      });
+    }
+
+    clearHistoryBtn.addEventListener('click', () => {
+      conversionHistory = [];
+      localStorage.setItem('fileConverterHistory', JSON.stringify(conversionHistory));
+      updateHistoryTable();
+      showToast('转换历史已清空');
+    });
+
+    // 初始化历史记录
+    updateHistoryTable();
+
+    // 提示消息
+    const successToast = document.getElementById('successToast');
+    const successMessage = document.getElementById('successMessage');
+
+    function showToast(message) {
+      successMessage.textContent = message;
+      successToast.classList.remove('translate-y-20', 'opacity-0');
+      successToast.classList.add('translate-y-0', 'opacity-100');
+      
+      setTimeout(() => {
+        successToast.classList.remove('translate-y-0', 'opacity-100');
+        successToast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
